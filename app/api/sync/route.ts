@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase'; // Sua conexão com Supabase
+import { supabase } from '../../../lib/supabase'; // Sua conexão com Supabase
 
 export async function POST(request: Request) {
   try {
