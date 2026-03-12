@@ -1,3 +1,4 @@
+'use client';
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient'; // Verifique se o caminho do seu cliente supabase está correto
 import { useRouter } from 'next/router';
