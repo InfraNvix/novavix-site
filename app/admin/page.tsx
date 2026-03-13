@@ -1,6 +1,7 @@
 'use client'
-import { NextStudio } from 'sanity/next-studio'
-import config from '../../sanity.config' // Mudamos de @/ para ../../
+
+import { NextStudio } from 'next-sanity/studio'
+import config from '../../sanity.config'
 
 export default function AdminPage() {
   return (
