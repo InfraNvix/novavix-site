@@ -21,36 +21,38 @@ export default function LoginPage() {
     setLoading(false);
   };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-900 p-4">
-      <form onSubmit={handleLogin} className="w-full max-w-md bg-white p-8 rounded-2xl shadow-2xl">
-        <h2 className="text-2xl font-bold text-slate-800 mb-2 text-center">Portal do Cliente</h2>
-        <p className="text-slate-500 text-center mb-8">Entre com suas credenciais Novavix</p>
-        <div className="space-y-4">
-          <input
-            type="email"
-            placeholder="E-mail cadastrado"
-            className="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Sua senha"
-            className="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button
-            disabled={loading}
-            className="w-full bg-teal-600 text-white p-4 rounded-xl font-bold hover:bg-teal-700 transition"
-          >
-            {loading ? 'Verificando...' : 'Acessar Documentos'}
-          </button>
-        </div>
+ return (
+  <div className="flex min-h-screen items-center justify-center bg-[#0f172a] p-4">
+    <div className="w-full max-w-[400px] bg-white p-10 rounded-[32px] shadow-2xl">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl font-bold text-slate-800 mb-2">Portal do Cliente</h2>
+        <p className="text-slate-400">Entre com suas credenciais Novavix</p>
+      </div>
+      
+      <form onSubmit={handleLogin} className="space-y-5">
+        <input
+          type="email"
+          placeholder="E-mail cadastrado"
+          className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-teal-500 outline-none transition-all"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Sua senha"
+          className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-teal-500 outline-none transition-all"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <button
+          disabled={loading}
+          className="w-full bg-[#14b8a6] hover:bg-[#0d9488] text-white p-4 rounded-2xl font-bold text-lg transition-all shadow-lg shadow-teal-100"
+        >
+          {loading ? 'Carregando...' : 'Acessar Documentos'}
+        </button>
       </form>
     </div>
-  );
-}
+  </div>
+);
