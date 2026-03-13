@@ -1,7 +1,11 @@
 'use client'
 import { NextStudio } from 'sanity/next-studio'
-import config from '@/sanity.config' // Certifique-se que o sanity.config.ts está na raiz
+import config from '../../sanity.config' // Mudamos de @/ para ../../
 
 export default function AdminPage() {
-  return <NextStudio config={config} />
+  return (
+    <div style={{ height: '100vh' }}>
+      <NextStudio config={config} />
+    </div>
+  )
 }
