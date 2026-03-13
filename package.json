@@ -9,11 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.8",
-    "next": "latest",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "lucide-react": "^0.344.0"
+    "next": "14.2.3",
+    "react": "^18",
+    "react-dom": "^18",
+    "@supabase/supabase-js": "^2.43.2",
+    "sanity": "^3.0.0",
+    "next-sanity": "^9.0.0",
+    "styled-components": "^6.1.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
