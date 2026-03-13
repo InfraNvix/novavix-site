@@ -6,7 +6,7 @@ export default defineConfig({
   name: 'default',
   title: 'Novavix Admin',
 
-  projectId: 'SEU_PROJECT_ID_AQUI', // Encontre no manage.sanity.io
+  projectId: 'Novavix Site', // Encontre no manage.sanity.io
   dataset: 'production',
 
   basePath: '/admin', // O painel ficará em novavix-site.onrender.com/admin
