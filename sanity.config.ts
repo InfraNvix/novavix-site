@@ -6,7 +6,7 @@ export default defineConfig({
   name: 'default',
   title: 'Novavix Admin',
 
-  projectId: 'SEU_PROJECT_ID_AQUI', // Verifique se o seu ID está aqui
+  projectId: '70qpcg23', // Verifique se o seu ID está aqui
   dataset: 'production',
 
   basePath: '/admin',
