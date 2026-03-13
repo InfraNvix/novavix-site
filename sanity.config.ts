@@ -6,10 +6,11 @@ export default defineConfig({
   name: 'default',
   title: 'Novavix Admin',
 
-  projectId: 'Novavix Site', // Encontre no manage.sanity.io
+  // Você encontra esse ID no site manage.sanity.io
+  projectId: 'SEU_PROJECT_ID_AQUI', 
   dataset: 'production',
 
-  basePath: '/admin', // O painel ficará em novavix-site.onrender.com/admin
+  basePath: '/admin',
 
   plugins: [deskTool()],
 
