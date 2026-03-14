@@ -64,13 +64,14 @@ return (
 
       {error && <p className="text-red-500 text-sm font-medium text-center bg-red-50 p-3 rounded-xl">{error}</p>}
 
-      <button 
-        type="submit" 
-        disabled={loading}
-        className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-lg active:scale-[0.98]"
+      
+    <button 
+      type="submit" 
+      disabled={loading}
+      className="w-full bg-[#1E3A5F] text-white py-4 rounded-2xl font-bold hover:opacity-90 transition-all active:scale-[0.98]"
       >
-        {loading ? 'Entrando...' : 'Entrar no Portal'}
-      </button>
+      {loading ? 'Entrando...' : 'Entrar no Portal'}
+    </button>>
     </form>
   </div>
 </div>
