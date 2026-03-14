@@ -71,7 +71,7 @@ return (
       className="w-full bg-[#1E3A5F] text-white py-4 rounded-2xl font-bold hover:opacity-90 transition-all active:scale-[0.98]"
       >
       {loading ? 'Entrando...' : 'Entrar no Portal'}
-    </button>>
+    </button>
     </form>
   </div>
 </div>
