@@ -2,8 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --foreground-rgb: 30, 58, 95; /* O Azul da Novavix */
+  --background-start-rgb: 255, 255, 255;
+  --background-end-rgb: 255, 255, 255;
+}
+
 body {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  color: rgb(var(--foreground-rgb));
+  background: white;
 }
