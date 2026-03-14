@@ -12,10 +12,10 @@ const config: Config = {
       novavix: {
         azul: '#1E3A5F',
         verde: '#00A859',
-      }
-    }
-  }
-}
+      },
+    },
+  },
+},
   plugins: [],
 };
 export default config;
