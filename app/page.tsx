@@ -24,21 +24,27 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-white font-sans text-[#1E3A5F]">
       {/* NAVEGAÇÃO COM LOGO */}
-      <nav className="p-6 flex justify-between items-center max-w-6xl mx-auto">
-        <Image 
-          src="/logo-novavix.png" 
-          alt="Novavix Logo" 
-          width={180} 
-          height={50} 
-          priority
-        />
-        <Link 
-          href="/login" 
-          className="bg-[#00A859] text-white px-6 py-2.5 rounded-full font-bold hover:opacity-90 transition-all shadow-md"
-        >
-          Portal do Cliente
-        </Link>
-      </nav>
+     <nav className="p-6 bg-white border-b border-slate-100 shadow-sm">
+    <div className="max-w-6xl mx-auto flex justify-between items-center">
+    {/* LOGO OFICIAL NOVAVIX */}
+    <div className="relative w-[220px] h-[60px]">
+      <Image 
+        src="/logo-novavix.png" 
+        alt="Novavix Gestão Ocupacional" 
+        fill
+        className="object-contain object-left"
+        priority
+      />
+    </div>
+    
+    <Link 
+      href="/login" 
+      className="bg-[#1E3A5F] text-white px-8 py-3 rounded-xl font-bold hover:bg-opacity-90 transition-all text-sm shadow-lg shadow-blue-900/10"
+    >
+      Portal do Cliente
+    </Link>
+  </div>
+</nav>
 
       {/* HERO SECTION */}
       <header className="max-w-6xl mx-auto px-6 py-20 lg:py-32 flex flex-col items-center text-center">
