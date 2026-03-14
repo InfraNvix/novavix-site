@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { createClient } from 'next-sanity';
 
 const client = createClient({
-  projectId: 'SEU_PROJECT_ID_AQUI', 
+  projectId: '70qpcg23', 
   dataset: 'production',
   apiVersion: '2024-01-01',
   useCdn: false, 
