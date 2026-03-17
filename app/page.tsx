@@ -11,7 +11,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="relative w-[220px] h-[60px]">
             <Image 
-              src="/logo-novavix.png.png" // Usei o nome que vi no seu Git para garantir que apareça
+              src="/logo-novavix.png" // Usei o nome que vi no seu Git para garantir que apareça
               alt="Novavix" 
               fill
               className="object-contain object-left"
