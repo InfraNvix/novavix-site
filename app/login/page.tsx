@@ -27,6 +27,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
+    // AJUSTE: O comando correto acessa o módulo .auth
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -42,14 +43,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col justify-center items-center p-6">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col justify-center items-center p-6 origin-top scale-90 lg:scale-100">
       <div className="absolute top-8 left-8">
         <Link href="/" className="text-slate-400 hover:text-slate-600 flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-all">
           ← Início
         </Link>
       </div>
 
-      <div className="w-full max-w-[380px] scale-90 lg:scale-100">
+      <div className="w-full max-w-[380px]">
         <div className="flex justify-center mb-8">
           <div className="relative w-[180px] h-[50px]">
             <Image src="/logo-novavix.png" alt="Novavix" fill className="object-contain" priority />
@@ -77,6 +78,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                placeholder="nome@empresa.com.br"
               />
             </div>
 
@@ -88,6 +90,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                placeholder="••••••••"
               />
             </div>
 
@@ -102,8 +105,9 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-            <p className="text-[11px] text-slate-400">
-              Acesso exclusivo para clientes ativos.
+            <p className="text-[11px] text-slate-400 font-medium">
+              Dúvidas com seu acesso? <br />
+              <Link href="https://wa.me/5527992655561" className="text-blue-600 font-bold hover:underline">Fale com o suporte</Link>
             </p>
           </div>
         </div>
