@@ -43,7 +43,8 @@ export default function DashboardPage() {
   }, [supabase, router]);
 
   const handleSignOut = async () => {
-    await supabase.signOut();
+    // O comando correto é acessar o módulo .auth antes do signOut
+    await supabase.auth.signOut(); 
     router.push('/login');
   };
 
