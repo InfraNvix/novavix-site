@@ -15,7 +15,9 @@
     "@supabase/supabase-js": "^2.43.2",
     "sanity": "^3.0.0",
     "next-sanity": "^9.0.0",
-    "styled-components": "^6.1.0"
+    "styled-components": "^6.1.0",
+    "@supabase/auth-helpers-nextjs": "latest",
+    "@supabase/supabase-js": "latest"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
