@@ -9,16 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "14.2.3",
-    "react": "^18",
-    "react-dom": "^18",
-    "@supabase/supabase-js": "^2.43.2",
-    "sanity": "^3.0.0",
-    "next-sanity": "^9.0.0",
-    "styled-components": "^6.1.0",
-    "@supabase/auth-helpers-nextjs": "latest",
-    "@supabase/supabase-js": "latest"
-  },
+  "@supabase/ssr": "latest",
+  "@supabase/supabase-js": "latest",
+  "next": "latest",
+  "react": "latest",
+  "react-dom": "latest"
+}
   "devDependencies": {
     "typescript": "^5.3.3",
     "@types/node": "^20.11.24",
