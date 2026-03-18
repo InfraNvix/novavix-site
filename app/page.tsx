@@ -6,12 +6,12 @@ export default function HomePage() {
   const azulClaro = "#3B82F6";
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-800">
+    <div className="min-h-screen bg-white font-sans text-slate-800 overflow-x-hidden">
       {/* BARRA SUPERIOR DISCRETA */}
       <div className="bg-slate-100 border-b border-slate-200 py-2 text-[11px] font-medium text-slate-500">
-        <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
-          <span>Soluções Inteligentes em Saúde e Segurança do Trabalho</span>
-          <div className="flex gap-4">
+        <div className="max-w-6xl mx-auto px-6 flex justify-between items-center gap-4">
+          <span className="truncate">Soluções Inteligentes em Saúde e Segurança do Trabalho</span>
+          <div className="flex gap-4 shrink-0">
             <span>ES - (27) 99265-5561</span>
             <span className="hidden md:inline">|</span>
             <span className="hidden md:inline">contato@novavix.com.br</span>
@@ -24,7 +24,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="relative w-[180px] h-[50px]">
             <Image 
-              src="/logo-novavix.png" // Logo escura original
+              src="/logo-novavix.png" 
               alt="Novavix" 
               fill
               className="object-contain object-left"
@@ -40,7 +40,7 @@ export default function HomePage() {
 
           <Link 
             href="/login" 
-            className="text-white px-6 py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest hover:brightness-110 transition-all shadow-md" 
+            className="text-white px-6 py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest hover:brightness-110 transition-all shadow-md active:scale-95" 
             style={{ backgroundColor: azulNovavix }}
           >
             Acesso Restrito
@@ -48,40 +48,45 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* HERO SECTION - FOCO NO SOFTWARE COM IMAGEM */}
-      <section className="relative bg-slate-50 py-16 lg:py-24 overflow-hidden border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <h1 className="text-4xl lg:text-5xl font-extrabold leading-[1.1] mb-6 text-slate-900">
+      {/* HERO SECTION REFORMULADA - COMPACTA E LIMPA */}
+      <section className="relative bg-slate-50 py-16 lg:py-20 overflow-hidden border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-[1.2fr,1fr] gap-12 items-center">
+          
+          {/* COLUNA DO TEXTO À ESQUERDA - REPOSICIONADA E COMPACTADA */}
+          <div className="z-10">
+            <h1 className="text-4xl lg:text-5xl font-extrabold leading-[1.15] mb-6 text-slate-900 tracking-tight">
               Gestão de <span style={{ color: azulClaro }}>SST e eSocial</span> <br />
               com tecnologia de ponta.
             </h1>
-            <p className="text-lg text-slate-600 mb-8 max-w-lg leading-relaxed">
+            <p className="text-base text-slate-600 mb-8 max-w-xl leading-relaxed font-medium">
               <strong style={{ color: azulNovavix }}>NOVAVIX GO</strong>: a sua próxima plataforma de gestão especializada para PGR, PCMSO e envio automático de eventos ao eSocial. Segurança jurídica e eficiência para sua empresa.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link 
                 href="https://wa.me/5527992655561?text=Olá, gostaria de conhecer as soluções da Novavix." 
                 target="_blank"
-                className="text-white px-8 py-4 rounded-lg font-bold text-sm uppercase transition-all shadow-lg hover:-translate-y-1"
+                rel="noopener noreferrer"
+                className="text-white px-8 py-4 rounded-lg font-bold text-sm uppercase transition-all shadow-lg hover:-translate-y-1 active:scale-95"
                 style={{ backgroundColor: azulNovavix }}
               >
                 Entrar em Contato
               </Link>
-              <button className="border-2 border-slate-300 text-slate-600 px-8 py-4 rounded-lg font-bold text-sm uppercase hover:bg-white transition-all">
+              <button className="border-2 border-slate-300 text-slate-600 px-8 py-4 rounded-lg font-bold text-sm uppercase hover:bg-white hover:border-slate-400 hover:text-slate-800 transition-all active:scale-95">
                 Nossas Soluções
               </button>
             </div>
           </div>
           
-          {/* DESTAQUE VISUAL: IMAGEM DA LOGO BRANCA SOBRE AZUL MARINHO */}
-          <div className="hidden lg:block relative h-[400px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex items-center justify-center p-8 text-center" style={{ backgroundColor: azulNovavix }}>
-              <div className="relative w-full h-full max-w-[400px]">
+          {/* COLUNA DA IMAGEM - SEM A CAIXA GIGANTE E DO TAMANHO CORRETO */}
+          <div className="relative flex items-center justify-center lg:justify-end overflow-hidden p-4 rounded-3xl border border-slate-200 bg-white shadow-2xl">
+              {/* O container agora respeita o tamanho da figura */}
+              <div className="relative w-full h-[280px] md:h-[350px]">
                 <Image 
-                  src="/logo-novavix-branca.png" // Nova imagem que você subiu
+                  src="/logo-novavix-branca.png" // Certifique-se que o nome no Git é este!
                   alt="NOVAVIX GO - Gestão Ocupacional"
                   fill
-                  className="object-contain"
+                  className="object-contain object-center transition-transform hover:scale-105 duration-500"
+                  priority
                 />
               </div>
           </div>
@@ -91,11 +96,11 @@ export default function HomePage() {
       {/* SERVIÇOS EM GRID COMPACTO */}
       <section className="py-20 max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">Soluções Completas</h2>
+          <h2 className="text-3xl font-bold text-slate-900 mb-4 tracking-tight">Soluções Completas</h2>
           <div className="h-1.5 w-20 bg-blue-500 mx-auto rounded-full"></div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             { t: "Gestão eSocial", d: "Envio simplificado dos eventos SST com total segurança de dados." },
             { t: "Saúde Ocupacional", d: "Gestão completa de exames, ASOs e PCMSO integrado ao sistema de gestão." },
@@ -112,7 +117,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* RODAPÉ */}
+      {/* RODAPÉ TIPO COMPACTO E PROFISSIONAL */}
       <footer className="bg-slate-900 text-white py-12 px-6">
         <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-12 text-sm">
           <div className="col-span-1 md:col-span-1">
@@ -124,9 +129,9 @@ export default function HomePage() {
           <div>
             <h4 className="font-bold mb-4 uppercase text-xs tracking-widest text-blue-400">Links Rápidos</h4>
             <ul className="space-y-2 text-slate-300">
-              <li><Link href="#" className="hover:text-white">Sobre Nós</Link></li>
-              <li><Link href="#" className="hover:text-white">Política de Privacidade</Link></li>
-              <li><Link href="/login" className="hover:text-white">Portal do Cliente</Link></li>
+              <li><Link href="#" className="hover:text-white transition-colors">Sobre Nós</Link></li>
+              <li><Link href="#" className="hover:text-white transition-colors">Política de Privacidade</Link></li>
+              <li><Link href="/login" className="hover:text-white transition-colors">Portal do Cliente</Link></li>
             </ul>
           </div>
           <div>
