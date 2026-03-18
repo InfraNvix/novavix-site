@@ -7,7 +7,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-800">
-      {/* BARRA SUPERIOR DISCRETA (Estilo Institucional) */}
+      {/* BARRA SUPERIOR DISCRETA */}
       <div className="bg-slate-100 border-b border-slate-200 py-2 text-[11px] font-medium text-slate-500">
         <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
           <span>Soluções Inteligentes em Saúde e Segurança do Trabalho</span>
@@ -48,7 +48,7 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* HERO SECTION - COMPACTA E PROFISSIONAL */}
+      {/* HERO SECTION - FOCO NO NOVAVIX GO */}
       <section className="relative bg-slate-50 py-16 lg:py-24 overflow-hidden border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div>
@@ -57,7 +57,7 @@ export default function HomePage() {
               com tecnologia de ponta.
             </h1>
             <p className="text-lg text-slate-600 mb-8 max-w-lg leading-relaxed">
-              Software e consultoria especializada para PGR, PCMSO, LTCAT e envio automático de eventos ao eSocial. Segurança jurídica e eficiência para sua empresa.
+              <strong style={{ color: azulNovavix }}>NOVAVIX GO</strong>: a sua próxima plataforma de gestão especializada para PGR, PCMSO e envio automático de eventos ao eSocial. Segurança jurídica e eficiência para sua empresa.
             </p>
             <div className="flex flex-wrap gap-4">
               <Link 
@@ -74,11 +74,25 @@ export default function HomePage() {
             </div>
           </div>
           
-          {/* Espaço para um elemento visual, gráfico ou imagem do sistema */}
-          <div className="hidden lg:block relative h-[400px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-             <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-                <span className="text-slate-300 font-bold uppercase tracking-widest italic opacity-50">Novavix Dashboard</span>
-             </div>
+          {/* DESTAQUE DO PRODUTO PRINCIPAL: NOVAVIX GO */}
+          <div className="relative h-[400px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-white to-slate-50">
+              <div className="absolute top-0 right-0 p-4">
+                <span className="text-[10px] font-bold bg-blue-100 text-blue-600 px-3 py-1 rounded-full uppercase tracking-tighter">Software Integrado</span>
+              </div>
+              
+              <h2 className="text-6xl font-black mb-2 tracking-tighter" style={{ color: azulNovavix }}>
+                NOVAVIX <span style={{ color: azulClaro }}>GO</span>
+              </h2>
+              <div className="h-1 w-24 bg-blue-500 mb-6 rounded-full"></div>
+              
+              <p className="text-slate-700 font-bold text-xl max-w-xs leading-snug">
+                Sistema integrado de gestão em Saúde e Segurança Ocupacional
+              </p>
+              
+              <div className="mt-8 flex gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Plataforma Ativa</span>
+              </div>
           </div>
         </div>
       </section>
@@ -92,12 +106,12 @@ export default function HomePage() {
 
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { t: "Gestão eSocial", d: "Envio simplificado dos eventos S-2210, S-2220 e S-2240 com total segurança de dados." },
+            { t: "Gestão eSocial", d: "Envio simplificado dos eventos SST com total segurança de dados." },
             { t: "Saúde Ocupacional", d: "Gestão completa de exames, ASOs e PCMSO integrado ao sistema de gestão." },
-            { t: "Segurança do Trabalho", d: "PGR, LTCAT e laudos técnicos elaborados por equipe especializada." },
-            { t: "Portal do Cliente", d: "Acesso 24h a documentos, certificados e indicadores de conformidade." },
-            { t: "Treinamentos NRs", d: "Controle e gestão de vencimentos de treinamentos normativos e certificados." },
-            { t: "Engenharia Especializada", d: "Consultoria técnica para adequação de normas e redução de riscos." }
+            { t: "Segurança do Trabalho", d: "PGR completo técnicos integrado aos demais módulos." },
+            { t: "Portal do Cliente", d: "Acesso 24h a documentos do seu cliente possibilitando gestão de seus indicadores de conformidade." },
+            { t: "Treinamentos NRs", d: "Controle e gestão de vencimentos de treinamentos normativos e certificados. (EM DESENVOLVIMENTO)" },
+            { t: "Financeiro", d: "Módulo de gestão financeira integrado com toda plataforma, com geração automatizada de boletos e notas fiscais." }
           ].map((item, i) => (
             <div key={i} className="bg-white p-6 border border-slate-100 shadow-sm hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: i % 2 === 0 ? azulNovavix : azulClaro }}>
               <h3 className="text-lg font-bold mb-3 text-slate-800">{item.t}</h3>
@@ -107,7 +121,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* RODAPÉ TIPO RS DATA */}
+      {/* RODAPÉ */}
       <footer className="bg-slate-900 text-white py-12 px-6">
         <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-12 text-sm">
           <div className="col-span-1 md:col-span-1">
