@@ -16,7 +16,8 @@
     "react-dom": "latest",
     "lucide-react": "latest",
     "next-sanity": "latest",
-    "sanity": "latest"
+    "sanity": "latest",
+    "styled-components": "^6.1.8"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
