@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'; // Mantemos o router aqui
+import Link from 'next/link'; // ESTA É A LINHA QUE FALTAVA
 import Image from 'next/image';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
 
-  // Cria o cliente de forma compatível com o ambiente do navegador
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -61,7 +61,7 @@ export default function DashboardPage() {
       </nav>
 
       <main className="max-w-5xl mx-auto p-10">
-        <header className="mb-10">
+        <header className="mb-6">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Bem-vindo ao NOVAVIX GO</h1>
           <p className="text-slate-500 mt-2 font-medium">Seu painel de gestão de SST e eSocial está pronto.</p>
         </header>
