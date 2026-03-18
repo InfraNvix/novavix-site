@@ -1,122 +1,103 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import { ShieldCheck, Zap, BarChart3, ChevronRight } from 'lucide-react';
 
 export default function HomePage() {
   const azulNovavix = "#1E3A5F";
-  const azulClaro = "#3B82F6";
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-800 overflow-x-hidden">
-      {/* BARRA SUPERIOR - MAIS COMPACTA */}
-      <div className="bg-slate-100 border-b border-slate-200 py-1.5 text-[10px] font-medium text-slate-500">
-        <div className="max-w-5xl mx-auto px-6 flex justify-between items-center gap-4">
-          <span className="truncate uppercase tracking-wider">Soluções Inteligentes em Saúde e Segurança do Trabalho</span>
-          <div className="flex gap-4 shrink-0">
-            <span>ES - (27) 99265-5561</span>
-            <span className="hidden md:inline">|</span>
-            <span className="hidden md:inline">contato@novavix.com.br</span>
-          </div>
-        </div>
-      </div>
-
-      {/* HEADER - ALTURA REDUZIDA */}
-      <nav className="bg-white border-b border-slate-100 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-5xl mx-auto px-6 py-3 flex justify-between items-center">
-          <div className="relative w-[150px] h-[40px]">
-            <Image 
-              src="/logo-novavix.png" 
-              alt="Novavix" 
-              fill
-              className="object-contain object-left"
-              priority
-            />
+    <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
+      
+      {/* NAVBAR COMPACTA */}
+      <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+          <div className="relative w-[150px] h-[45px]">
+            <Image src="/logo-novavix.png" alt="Novavix" fill className="object-contain object-left" />
           </div>
           
-          <div className="hidden lg:flex gap-6 text-[11px] font-bold uppercase tracking-widest text-slate-500">
-            <Link href="#" className="hover:text-blue-600 transition-colors">Início</Link>
-            <Link href="#" className="hover:text-blue-600 transition-colors">Soluções</Link>
-            <Link href="#" className="hover:text-blue-600 transition-colors">Diferenciais</Link>
+          <div className="hidden md:flex items-center gap-8 text-[11px] font-black uppercase tracking-widest text-slate-500">
+            <Link href="#produto" className="hover:text-blue-600 transition-colors">O Produto</Link>
+            <Link href="#solucoes" className="hover:text-blue-600 transition-colors">Soluções</Link>
+            <Link href="/login" className="bg-slate-900 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-slate-200">
+              Acesso Restrito
+            </Link>
           </div>
-
-          <Link 
-            href="/login" 
-            className="text-white px-5 py-2 rounded-md font-bold text-[10px] uppercase tracking-widest hover:brightness-110 transition-all shadow-md active:scale-95" 
-            style={{ backgroundColor: azulNovavix }}
-          >
-            Acesso Restrito
-          </Link>
         </div>
       </nav>
 
-      {/* HERO SECTION - ESCALADA PARA ~85% */}
-      <section className="relative bg-white py-12 lg:py-16 overflow-hidden">
-        <div className="max-w-5xl mx-auto px-6 grid lg:grid-cols-2 gap-10 items-center">
-          
-          <div className="z-10">
-            <h1 className="text-4xl lg:text-5xl font-extrabold leading-[1.1] mb-6 text-slate-900 tracking-tight">
-              A revolução digital na <br />
-              <span style={{ color: azulClaro }}>Gestão de SST.</span>
+      {/* HERO SECTION - O IMPACTO */}
+      <section className="pt-40 pb-20 px-6">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
+              <Zap size={14} /> Inteligência em SST & eSocial
+            </div>
+            <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter leading-[0.95] mb-8">
+              Gestão Ocupacional <br /> 
+              <span style={{ color: azulNovavix }}>sem burocracia.</span>
             </h1>
-            <p className="text-base text-slate-600 mb-8 max-w-md leading-relaxed">
-              Sua empresa em conformidade com o eSocial através do <strong style={{ color: azulNovavix }}>NOVAVIX GO</strong>: uma plataforma robusta, ágil e totalmente segura.
+            <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-[480px] mb-10">
+              O **Novavix GO** centraliza seus eventos de SST, PGR e PCMSO em uma plataforma ágil, segura e 100% integrada ao eSocial.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <Link 
-                href="https://wa.me/5527992655561?text=Olá, gostaria de entrar em contato sobre o NOVAVIX GO." 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white px-8 py-3.5 rounded-xl font-bold text-sm uppercase transition-all shadow-lg hover:-translate-y-1 active:scale-95"
-                style={{ backgroundColor: azulNovavix }}
-              >
-                Entrar em Contato
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="https://wa.me/5527992655561" className="flex items-center justify-center gap-3 bg-blue-600 text-white px-8 py-5 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100">
+                Solicitar Demonstração <ChevronRight size={18} />
+              </Link>
+              <Link href="/login" className="flex items-center justify-center gap-3 bg-white border-2 border-slate-100 text-slate-600 px-8 py-5 rounded-2xl font-bold text-sm uppercase tracking-widest hover:border-blue-200 transition-all">
+                Portal do Cliente
               </Link>
             </div>
           </div>
-          
-          {/* IMAGEM COM MÁSCARA DE ESMAECIMENTO */}
-          <div className="relative group overflow-hidden rounded-[32px] transition-all duration-700">
-              <div className="relative w-full h-[300px] md:h-[400px]">
-                <Image 
-                  src="/logo-novavix-branca.png" 
-                  alt="Sistema NOVAVIX GO"
-                  fill
-                  className="object-cover object-center transition-transform group-hover:scale-105 duration-700"
-                  priority
-                />
-                {/* Esmaecimento suave nas bordas para integração total ao fundo branco */}
-                <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_40px_rgba(255,255,255,0.7)]"></div>
+
+          {/* ÁREA VISUAL (REPRESENTAÇÃO DO SISTEMA) */}
+          <div className="relative">
+            <div className="bg-slate-100 rounded-[40px] aspect-video w-full overflow-hidden shadow-2xl border-[8px] border-white relative group">
+              <div className="absolute inset-0 bg-gradient-to-tr from-slate-900/10 to-transparent"></div>
+              {/* Aqui entrará um print real do Dashboard depois */}
+              <div className="flex items-center justify-center h-full text-slate-300 font-black uppercase tracking-widest text-xs">
+                Preview Novavix GO Dashboard
               </div>
+            </div>
+            {/* Badge flutuante */}
+            <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-3xl shadow-2xl border border-slate-50 hidden md:block animate-bounce-slow">
+              <div className="flex items-center gap-4">
+                <div className="bg-emerald-500 p-3 rounded-2xl text-white">
+                  <ShieldCheck size={24} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-slate-400">Status eSocial</p>
+                  <p className="font-bold text-slate-900 leading-none">100% Conformidade</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* SERVIÇOS - GRID MAIS COMPACTO */}
-      <section className="py-16 max-w-5xl mx-auto px-6">
-        <div className="grid md:grid-cols-3 gap-5">
-          {[
-            { t: "Gestão eSocial", d: "Envio simplificado dos eventos SST com total segurança de dados." },
-            { t: "Saúde Ocupacional", d: "Gestão completa de exames e ASOs integrado ao sistema." },
-            { t: "Segurança do Trabalho", d: "PGR e laudos técnicos integrados aos demais módulos." },
-            { t: "Portal do Cliente", d: "Acesso 24h possibilitando gestão de indicadores." },
-            { t: "Treinamentos NRs", d: "Gestão de vencimentos normativos e certificados. (BREVE)" },
-            { t: "Financeiro Integrado", d: "Geração automatizada de boletos e notas fiscais." }
-          ].map((item, i) => (
-            <div key={i} className="bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: i % 2 === 0 ? azulNovavix : azulClaro }}>
-              <h3 className="text-base font-bold mb-2 text-slate-800">{item.t}</h3>
-              <p className="text-slate-500 text-[13px] leading-relaxed">{item.d}</p>
-            </div>
-          ))}
+      {/* SEÇÃO DE DIFERENCIAIS RÁPIDOS */}
+      <section id="produto" className="py-20 bg-slate-50/50">
+        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-12">
+          <div className="space-y-4">
+            <div className="text-blue-600"><Zap size={32} strokeWidth={3} /></div>
+            <h4 className="font-bold text-xl">Agilidade no eSocial</h4>
+            <p className="text-slate-500 text-sm leading-relaxed font-medium">Envio automatizado dos eventos S-2210, S-2220 e S-2240 com validação prévia.</p>
+          </div>
+          <div className="space-y-4">
+            <div className="text-blue-600"><ShieldCheck size={32} strokeWidth={3} /></div>
+            <h4 className="font-bold text-xl">Gestão de Documentos</h4>
+            <p className="text-slate-500 text-sm leading-relaxed font-medium">PGR e PCMSO sempre atualizados e disponíveis para download imediato no portal.</p>
+          </div>
+          <div className="space-y-4">
+            <div className="text-blue-600"><BarChart3 size={32} strokeWidth={3} /></div>
+            <h4 className="font-bold text-xl">Dashboards Técnicos</h4>
+            <p className="text-slate-500 text-sm leading-relaxed font-medium">Visualize a saúde ocupacional da sua empresa com indicadores claros e objetivos.</p>
+          </div>
         </div>
       </section>
 
-      {/* RODAPÉ DISCRETO */}
-      <footer className="bg-slate-900 text-white py-10 px-6">
-        <div className="max-w-5xl mx-auto text-center">
-            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.3em]">
-                © 2026 NOVAVIX SISTEMAS. Todos os direitos reservados.
-            </p>
-        </div>
-      </footer>
     </div>
   );
 }
