@@ -1,3 +1,5 @@
 import landingPage from './landingPage'
+import post from './post' // 1. Importa o novo modelo de notícias
 
-export const schemaTypes = [landingPage]
+// 2. Adiciona o 'post' na lista oficial do Sanity
+export const schemaTypes = [landingPage, post]
