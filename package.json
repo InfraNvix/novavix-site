@@ -9,12 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
-  "@supabase/ssr": "latest",
-  "@supabase/supabase-js": "latest",
-  "next": "latest",
-  "react": "latest",
-  "react-dom": "latest"
-}
+    "@supabase/ssr": "latest",
+    "@supabase/supabase-js": "latest",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
   "devDependencies": {
     "typescript": "^5.3.3",
     "@types/node": "^20.11.24",
