@@ -3,89 +3,134 @@ import Image from 'next/image';
 
 export default function HomePage() {
   const azulNovavix = "#1E3A5F";
+  const azulClaro = "#3B82F6";
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: "linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%)" }}>
-      {/* DETALHE DE TOPO - LINHA DE DESTAQUE */}
-      <div className="h-1 w-full" style={{ backgroundColor: azulNovavix }}></div>
+    <div className="min-h-screen bg-white font-sans text-slate-800">
+      {/* BARRA SUPERIOR DISCRETA (Estilo Institucional) */}
+      <div className="bg-slate-100 border-b border-slate-200 py-2 text-[11px] font-medium text-slate-500">
+        <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
+          <span>Soluções Inteligentes em Saúde e Segurança do Trabalho</span>
+          <div className="flex gap-4">
+            <span>ES - (27) 99265-5561</span>
+            <span className="hidden md:inline">|</span>
+            <span className="hidden md:inline">contato@novavix.com.br</span>
+          </div>
+        </div>
+      </div>
 
-      {/* HEADER REFINADO */}
-      <nav className="p-8 bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200/60 shadow-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="relative w-[240px] h-[65px] transition-transform hover:scale-105">
+      {/* HEADER COMPACTO */}
+      <nav className="bg-white border-b border-slate-100 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="relative w-[180px] h-[50px]">
             <Image 
               src="/logo-novavix.png" 
-              alt="Novavix Gestão Ocupacional" 
+              alt="Novavix" 
               fill
               className="object-contain object-left"
               priority
             />
           </div>
+          
+          <div className="hidden lg:flex gap-8 text-[13px] font-bold uppercase tracking-wider text-slate-600">
+            <Link href="#" className="hover:text-blue-600 transition-colors">Início</Link>
+            <Link href="#" className="hover:text-blue-600 transition-colors">Soluções</Link>
+            <Link href="#" className="hover:text-blue-600 transition-colors">Diferenciais</Link>
+          </div>
+
           <Link 
             href="/login" 
-            className="text-white px-10 py-3.5 rounded-2xl font-bold text-sm hover:opacity-90 transition-all shadow-lg active:scale-95" 
+            className="text-white px-6 py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest hover:brightness-110 transition-all shadow-md" 
             style={{ backgroundColor: azulNovavix }}
           >
-            Portal do Cliente
+            Acesso Restrito
           </Link>
         </div>
       </nav>
 
-      {/* CONTEÚDO PRINCIPAL (HERO) COM TEXTO MAIS IMPACTANTE */}
-      <header className="max-w-7xl mx-auto px-6 py-32 text-center">
-        <div className="inline-flex items-center gap-2 bg-slate-100 border border-slate-200 text-[11px] font-bold uppercase tracking-[0.25em] px-6 py-3 rounded-full mb-10 shadow-sm">
-           <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
-           SST Inteligente & Digital
+      {/* HERO SECTION - COMPACTA E PROFISSIONAL */}
+      <section className="relative bg-slate-50 py-16 lg:py-24 overflow-hidden border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <h1 className="text-4xl lg:text-5xl font-extrabold leading-[1.1] mb-6 text-slate-900">
+              Gestão de <span style={{ color: azulClaro }}>SST e eSocial</span> <br />
+              com tecnologia de ponta.
+            </h1>
+            <p className="text-lg text-slate-600 mb-8 max-w-lg leading-relaxed">
+              Software e consultoria especializada para PGR, PCMSO, LTCAT e envio automático de eventos ao eSocial. Segurança jurídica e eficiência para sua empresa.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link 
+                href="https://wa.me/5527992655561?text=Olá, gostaria de conhecer as soluções da Novavix." 
+                target="_blank"
+                className="text-white px-8 py-4 rounded-lg font-bold text-sm uppercase transition-all shadow-lg hover:-translate-y-1"
+                style={{ backgroundColor: azulNovavix }}
+              >
+                Entrar em Contato
+              </Link>
+              <button className="border-2 border-slate-300 text-slate-600 px-8 py-4 rounded-lg font-bold text-sm uppercase hover:bg-white transition-all">
+                Nossas Soluções
+              </button>
+            </div>
+          </div>
+          
+          {/* Espaço para um elemento visual, gráfico ou imagem do sistema */}
+          <div className="hidden lg:block relative h-[400px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+             <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+                <span className="text-slate-300 font-bold uppercase tracking-widest italic opacity-50">Novavix Dashboard</span>
+             </div>
+          </div>
         </div>
-        
-        <h1 className="text-6xl lg:text-8xl font-black mb-10 tracking-tighter leading-tight" style={{ color: azulNovavix }}>
-          Segurança do Trabalho <br />
-          <span className="text-blue-600/80">de Alto Nível.</span>
-        </h1>
-        
-        <p className="text-xl text-slate-600/80 mb-14 max-w-2xl mx-auto leading-relaxed font-medium">
-          Sua empresa em conformidade com as NRs e o eSocial através de uma plataforma robusta, ágil e totalmente segura.
-        </p>
+      </section>
 
-        {/* BOTÃO DE CONTATO PREMIUM */}
-        <Link 
-          href="https://wa.me/5527992655561?text=Olá,%20vim%20pelo%20site%20da%20Novavix%20e%20gostaria%20de%20entrar%20em%20contato." 
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group relative text-white px-14 py-6 rounded-3xl font-bold transition-all text-xl shadow-[0_20px_50px_rgba(30,58,95,0.3)] hover:shadow-[0_25px_60px_rgba(30,58,95,0.4)] active:scale-95 overflow-hidden"
-          style={{ backgroundColor: azulNovavix }}
-        >
-          <span className="relative z-10">Entrar em Contato</span>
-          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        </Link>
-      </header>
+      {/* SERVIÇOS EM GRID COMPACTO */}
+      <section className="py-20 max-w-6xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-slate-900 mb-4">Soluções Completas</h2>
+          <div className="h-1.5 w-20 bg-blue-500 mx-auto rounded-full"></div>
+        </div>
 
-      {/* CARDS COM DESIGN SOFISTICADO */}
-      <section className="py-24 px-6 relative">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-10">
+        <div className="grid md:grid-cols-3 gap-6">
           {[
-            { t: "Gestão de eSocial", d: "Automação total dos eventos S-2210, S-2220 e S-2240 com validação técnica." },
-            { t: "Engenharia & Saúde", d: "Emissão de PGR, PCMSO e LTCAT com foco em redução de passivo trabalhista." },
-            { t: "Ecossistema Digital", d: "Centralização completa de documentos e treinamentos em um portal exclusivo 24h." }
+            { t: "Gestão eSocial", d: "Envio simplificado dos eventos S-2210, S-2220 e S-2240 com total segurança de dados." },
+            { t: "Saúde Ocupacional", d: "Gestão completa de exames, ASOs e PCMSO integrado ao sistema de gestão." },
+            { t: "Segurança do Trabalho", d: "PGR, LTCAT e laudos técnicos elaborados por equipe especializada." },
+            { t: "Portal do Cliente", d: "Acesso 24h a documentos, certificados e indicadores de conformidade." },
+            { t: "Treinamentos NRs", d: "Controle e gestão de vencimentos de treinamentos normativos e certificados." },
+            { t: "Engenharia Especializada", d: "Consultoria técnica para adequação de normas e redução de riscos." }
           ].map((item, i) => (
-            <div key={i} className="group bg-white p-12 rounded-[40px] shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-slate-100 hover:border-blue-200 transition-all hover:-translate-y-2">
-              <div className="w-12 h-1 w-full bg-slate-100 mb-8 group-hover:bg-blue-500 transition-colors"></div>
-              <h3 className="text-2xl font-bold mb-5" style={{ color: azulNovavix }}>{item.t}</h3>
-              <p className="text-slate-500 text-base leading-relaxed">{item.d}</p>
+            <div key={i} className="bg-white p-6 border border-slate-100 shadow-sm hover:shadow-md transition-shadow border-l-4" style={{ borderLeftColor: i % 2 === 0 ? azulNovavix : azulClaro }}>
+              <h3 className="text-lg font-bold mb-3 text-slate-800">{item.t}</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">{item.d}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* RODAPÉ DISCRETO E ELEGANTE */}
-      <footer className="py-20 border-t border-slate-100 text-center bg-white">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center gap-6">
-          <div className="opacity-40 grayscale hover:grayscale-0 transition-all w-32 relative h-10">
-             <Image src="/logo-novavix.png" alt="Novavix" fill className="object-contain" />
+      {/* RODAPÉ TIPO RS DATA */}
+      <footer className="bg-slate-900 text-white py-12 px-6">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-12 text-sm">
+          <div className="col-span-1 md:col-span-1">
+            <div className="relative w-[150px] h-[40px] mb-6 brightness-0 invert">
+              <Image src="/logo-novavix.png" alt="Novavix" fill className="object-contain object-left" />
+            </div>
+            <p className="text-slate-400">Transformando a gestão de SST através da tecnologia e expertise técnica.</p>
           </div>
-          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.4em]">
-            © 2026 NOVAVIX SISTEMAS - Tecnologia em Saúde & Segurança
-          </p>
+          <div>
+            <h4 className="font-bold mb-4 uppercase text-xs tracking-widest text-blue-400">Links Rápidos</h4>
+            <ul className="space-y-2 text-slate-300">
+              <li><Link href="#" className="hover:text-white">Sobre Nós</Link></li>
+              <li><Link href="#" className="hover:text-white">Política de Privacidade</Link></li>
+              <li><Link href="/login" className="hover:text-white">Portal do Cliente</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold mb-4 uppercase text-xs tracking-widest text-blue-400">Contato</h4>
+            <p className="text-slate-300">Espírito Santo, Brasil<br />(27) 99265-5561</p>
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto mt-12 pt-8 border-t border-slate-800 text-center text-slate-500 text-xs font-medium">
+          © 2026 NOVAVIX SISTEMAS. Todos os direitos reservados.
         </div>
       </footer>
     </div>
