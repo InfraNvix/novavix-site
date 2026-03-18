@@ -24,7 +24,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="relative w-[180px] h-[50px]">
             <Image 
-              src="/logo-novavix.png" 
+              src="/logo-novavix.png" // Logo escura original
               alt="Novavix" 
               fill
               className="object-contain object-left"
@@ -48,7 +48,7 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* HERO SECTION - FOCO NO NOVAVIX GO */}
+      {/* HERO SECTION - FOCO NO SOFTWARE COM IMAGEM */}
       <section className="relative bg-slate-50 py-16 lg:py-24 overflow-hidden border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
           <div>
@@ -74,24 +74,15 @@ export default function HomePage() {
             </div>
           </div>
           
-          {/* DESTAQUE DO PRODUTO PRINCIPAL: NOVAVIX GO */}
-          <div className="relative h-[400px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-white to-slate-50">
-              <div className="absolute top-0 right-0 p-4">
-                <span className="text-[10px] font-bold bg-blue-100 text-blue-600 px-3 py-1 rounded-full uppercase tracking-tighter">Software Integrado</span>
-              </div>
-              
-              <h2 className="text-6xl font-black mb-2 tracking-tighter" style={{ color: azulNovavix }}>
-                NOVAVIX <span style={{ color: azulClaro }}>GO</span>
-              </h2>
-              <div className="h-1 w-24 bg-blue-500 mb-6 rounded-full"></div>
-              
-              <p className="text-slate-700 font-bold text-xl max-w-xs leading-snug">
-                Sistema integrado de gestão em Saúde e Segurança Ocupacional
-              </p>
-              
-              <div className="mt-8 flex gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Plataforma Ativa</span>
+          {/* DESTAQUE VISUAL: IMAGEM DA LOGO BRANCA SOBRE AZUL MARINHO */}
+          <div className="hidden lg:block relative h-[400px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex items-center justify-center p-8 text-center" style={{ backgroundColor: azulNovavix }}>
+              <div className="relative w-full h-full max-w-[400px]">
+                <Image 
+                  src="/logo-novavix-branca.png" // Nova imagem que você subiu
+                  alt="NOVAVIX GO - Gestão Ocupacional"
+                  fill
+                  className="object-contain"
+                />
               </div>
           </div>
         </div>
