@@ -13,7 +13,10 @@
     "@supabase/supabase-js": "latest",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "lucide-react": "latest",
+    "next-sanity": "latest",
+    "sanity": "latest"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
