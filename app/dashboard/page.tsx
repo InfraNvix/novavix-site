@@ -1,21 +1,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
-  const supabase = createClientComponentClient();
   const router = useRouter();
 
-  const azulNovavix = "#1E3A5F";
+  // Cria o cliente de forma compatível com o ambiente do navegador
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
         router.push('/login');
       } else {
         setUser(user);
@@ -29,11 +32,16 @@ export default function DashboardPage() {
     router.push('/login');
   };
 
-  if (!user) return null; // Proteção visual enquanto carrega
+  if (!user) return (
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="animate-pulse font-bold text-slate-400 uppercase tracking-widest text-xs">
+        Carregando NOVAVIX GO...
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 scale-90 lg:scale-100 origin-top">
-      {/* HEADER DO SISTEMA */}
       <nav className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center shadow-sm">
         <div className="relative w-[140px] h-[40px]">
           <Image src="/logo-novavix.png" alt="Novavix" fill className="object-contain object-left" />
@@ -52,14 +60,12 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      {/* CONTEÚDO PRINCIPAL COMPACTO */}
       <main className="max-w-5xl mx-auto p-10">
         <header className="mb-10">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Bem-vindo ao NOVAVIX GO</h1>
           <p className="text-slate-500 mt-2 font-medium">Seu painel de gestão de SST e eSocial está pronto.</p>
         </header>
 
-        {/* CARDS DE EXEMPLO DO SISTEMA */}
         <div className="grid md:grid-cols-3 gap-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div className="text-blue-500 font-bold text-[10px] uppercase mb-2">Módulo Ativo</div>
