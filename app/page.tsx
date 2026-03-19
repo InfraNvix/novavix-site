@@ -18,13 +18,13 @@ async function getLandingData() {
       tituloHero,
       subtituloHero
     },
-    "posts": *[_type == "blogPost"] | order(_createdAt desc)[0...3]{
+    "posts": *[_type == "post"] | order(_createdAt desc)[0...3]{
       _id,
-      tituloPost,
+      "tituloPost": tituloNoticia || title,
       "slug": slug.current,
       _createdAt,
-      "imagemUrl": capaPost.asset->url,
-      resumoPost
+      "imagemUrl": imagemCapa.asset->url || mainImage.asset->url,
+      "resumoPost": conteudoNoticia[0].children[0].text || summary
     }
   }`;
   return await client.fetch(query);
