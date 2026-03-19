@@ -1,33 +1,20 @@
-'use client'
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
-import { Suspense } from 'react'
+import dynamic from 'next/dynamic';
 
-const AdminStudio = dynamic(
+const NextStudio = dynamic(
   async () => {
-    // Importamos o config e o componente Studio apenas no lado do cliente
-    const config = (await import('../../../../sanity.config')).default;
-    const Studio = (await import('./Studio')).default;
-    
-    return () => <Studio config={config} />;
+    const { NextStudio } = await import('next-sanity/studio');
+    const config = (await import('../../../../sanity.config.js')).default;
+    return (props) => <NextStudio {...props} config={config} />;
   },
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="fixed inset-0 bg-white flex items-center justify-center font-black text-slate-400 uppercase tracking-widest text-[10px] animate-pulse">
-        Iniciando Novavix Admin...
-      </div>
-    )
-  }
+  { ssr: false }
 );
 
 export default function AdminPage() {
   return (
     <div className="fixed inset-0 z-[9999] bg-white overflow-auto">
-      <Suspense fallback={null}>
-        <AdminStudio />
-      </Suspense>
+      <NextStudio />
     </div>
-  )
+  );
 }
