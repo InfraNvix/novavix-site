@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShieldCheck, Zap, BarChart3, ChevronRight, LayoutDashboard } from 'lucide-react';
+import { ShieldCheck, Zap, BarChart3, ChevronRight, LayoutDashboard, Rss } from 'lucide-react';
 import { createClient } from 'next-sanity';
 
+// 1. Cliente Sanity
 const client = createClient({
   projectId: '70qpcg23',
   dataset: 'production',
@@ -10,33 +11,57 @@ const client = createClient({
   useCdn: false,
 });
 
-export default async function HomePage() {
-  // A busca agora usa os nomes que o teste confirmou
-  const data = await client.fetch(`*[_type == "landingPage"][0]{
-    tituloHero,
-    subtituloHero
-  }`);
+// 2. Busca Dinâmica de Dados (Hero e Blog combinados)
+async function getLandingData() {
+  const query = `{
+    "landing": *[_type == "landingPage"][0]{
+      tituloHero,
+      subtituloHero
+    },
+    "posts": *[_type == "blogPost"] | order(_createdAt desc)[0...3]{
+      _id,
+      tituloPost,
+      "slug": slug.current,
+      _createdAt,
+      "imagemUrl": capaPost.asset->url,
+      resumoPost
+    }
+  }`;
+  return await client.fetch(query);
+}
 
-  // Se o Sanity falhar por algum motivo, mantemos o fallback
-  const title = data?.tituloHero || "Gestão Ocupacional sem burocracia.";
-  const subtitle = data?.subtituloHero || "O Novavix GO centraliza seus eventos de SST, PGR e PCMSO.";
+export default async function HomePage() {
+  const data = await getLandingData();
+  
+  const azulNovavix = "#1E3A5F";
+
+  // Variáveis Hero com nomes CORRETOS
+  const title = data?.landing?.tituloHero || "Gestão Ocupacional sem burocracia.";
+  const subtitle = data?.landing?.subtituloHero || "O Novavix GO centraliza seus eventos...";
+
+  // Variável Blog (Pega até 3 posts)
+  const posts = data?.posts || [];
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
       
+      {/* NAVBAR (Restaurada) */}
       <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <div className="relative w-[150px] h-[45px]">
             <Image src="/logo-novavix.png" alt="Novavix" fill className="object-contain object-left" />
           </div>
           <div className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-slate-400">
-            <Link href="/login" className="bg-slate-900 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-slate-200">
+            <a href="#solucoes" className="hover:text-blue-600 transition-colors">Soluções</a>
+            <a href="#blog" className="hover:text-blue-600 transition-colors">Blog</a>
+            <Link href="/login" className="bg-slate-900 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-slate-200 ml-4">
               Acesso Restrito
             </Link>
           </div>
         </div>
       </nav>
 
+      {/* HERO SECTION */}
       <section className="pt-40 pb-20 px-6">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
           <div>
@@ -44,7 +69,6 @@ export default async function HomePage() {
               <Zap size={14} /> Inteligência em SST & eSocial
             </div>
             
-            {/* AGORA VAI APARECER: Segurança do Trabalho Digital e Eficiente */}
             <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter leading-[0.95] mb-8 whitespace-pre-line">
               {title}
             </h1>
@@ -57,26 +81,111 @@ export default async function HomePage() {
               <Link href="https://wa.me/5527992655561" className="flex items-center justify-center gap-3 bg-blue-600 text-white px-8 py-5 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-100">
                 Solicitar Demonstração <ChevronRight size={18} />
               </Link>
+              <a href="#solucoes" className="flex items-center justify-center gap-3 bg-white border-2 border-slate-100 text-slate-500 px-8 py-5 rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:border-blue-200 transition-all">
+                Conhecer Soluções
+              </a>
             </div>
           </div>
 
+          {/* VISUAL PREVIEW - DARK TECH STYLE (Restaurado) */}
           <div className="relative">
-            <div className="bg-slate-900 rounded-[40px] aspect-video w-full overflow-hidden shadow-2xl border-[8px] border-white relative flex flex-col items-center justify-center p-12">
+            <div className="bg-slate-900 rounded-[40px] aspect-video w-full overflow-hidden shadow-2xl border-[8px] border-white relative group flex flex-col items-center justify-center p-12">
+              <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
               <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 mb-6 border border-blue-500/30">
                   <LayoutDashboard size={32} />
                 </div>
                 <p className="text-white/60 font-black uppercase tracking-[0.4em] text-[10px]">Novavix GO</p>
-                <p className="text-white/20 font-medium text-[11px] italic mt-4">Interface de Gestão</p>
+                <div className="h-[2px] w-12 bg-blue-500/40 my-3"></div>
+                <p className="text-white/20 font-medium text-[11px] italic">Interface de Gestão em Homologação</p>
+              </div>
+            </div>
+            <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-3xl shadow-2xl border border-slate-50 hidden md:block">
+              <div className="flex items-center gap-4">
+                <div className="bg-emerald-500 p-3 rounded-2xl text-white">
+                  <ShieldCheck size={24} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">Status eSocial</p>
+                  <p className="font-bold text-slate-900 leading-none">100% Conformidade</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <footer className="bg-white py-12 border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">© 2026 Novavix Sistemas</p>
+      {/* SEÇÃO SOLUÇÕES (Restaurada) */}
+      <section id="solucoes" className="py-24 bg-slate-50/50 scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="mb-16">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">O que entregamos</h2>
+            <div className="h-1 w-20 bg-blue-600 mt-2"></div>
+          </div>
+          <div className="grid md:grid-cols-3 gap-12">
+            <div className="space-y-4">
+              <div className="text-blue-600"><Zap size={32} strokeWidth={3} /></div>
+              <h4 className="font-bold text-xl tracking-tight">Agilidade no eSocial</h4>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Envio automatizado dos eventos S-2210, S-2220 e S-2240.</p>
+            </div>
+            <div className="space-y-4">
+              <div className="text-blue-600"><ShieldCheck size={32} strokeWidth={3} /></div>
+              <h4 className="font-bold text-xl tracking-tight">Gestão de Documentos</h4>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">PGR e PCMSO sempre atualizados.</p>
+            </div>
+            <div className="space-y-4">
+              <div className="text-blue-600"><BarChart3 size={32} strokeWidth={3} /></div>
+              <h4 className="font-bold text-xl tracking-tight">Dashboards Técnicos</h4>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Indicadores claros e objetivos em tempo real.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SEÇÃO DO BLOG (Nova!) */}
+      <section id="blog" className="py-24 bg-white scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between mb-16 gap-4">
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">Novidades (Blog)</h2>
+              <div className="h-1 w-20 bg-blue-600 mt-2"></div>
+            </div>
+            <Link href="https://wa.me/5527992655561" className="flex items-center justify-center gap-3 bg-white border-2 border-slate-100 text-slate-500 px-8 py-5 rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:border-blue-200 transition-all hidden md:flex">
+                Falar com Especialista <ChevronRight size={18} />
+            </Link>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {posts.length > 0 ? (
+              posts.map((post: any) => (
+                <div key={post._id} className="bg-white rounded-3xl p-6 border border-slate-100 group">
+                  <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-6 bg-slate-50">
+                    {post.imagemUrl ? (
+                      <Image src={post.imagemUrl} alt={post.tituloPost} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-slate-300"><Rss size={40} /></div>
+                    )}
+                  </div>
+                  <h4 className="font-bold text-lg tracking-tight text-slate-900 mb-2 leading-tight">{post.tituloPost}</h4>
+                  <p className="text-slate-500 text-sm leading-relaxed mb-4 line-clamp-2">{post.resumoPost}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Postado em: {new Date(post._createdAt).toLocaleDateString()}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-slate-500">Nenhuma postagem encontrada.</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER (Restaurado) */}
+      <footer className="bg-white py-12 border-t border-slate-100 mt-12">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">© 2026 Novavix Sistemas — Todos os direitos reservados</p>
+          <div className="flex gap-8 text-[10px] font-black uppercase text-slate-400">
+             <Link href="/login" className="hover:text-blue-600">Portal do Cliente</Link>
+             <Link href="https://wa.me/5527992655561" className="hover:text-blue-600">Suporte</Link>
+          </div>
         </div>
       </footer>
     </div>
