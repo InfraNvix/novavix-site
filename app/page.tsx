@@ -23,7 +23,10 @@ async function getLandingData() {
       "tituloPost": title,
       "slug": slug.current,
       _createdAt,
-      "imagemUrl": mainImage.asset->url,
+      // Mudança crítica aqui: O campo de imagem no banco provavelmente se chama mainImage ou imagemCapa.
+      // O Sanity salva a imagem real dentro de .asset->url
+      "imagemUrl": mainImage.asset->url || imagemCapa.asset->url,
+      // Mudança crítica aqui: O Sanity salva o texto em uma estrutura chamada children.
       "resumoPost": body[0].children[0].text
     }
   }`;
