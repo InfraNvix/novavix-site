@@ -1,17 +1,17 @@
 import { defineConfig } from 'sanity'
-import { structureTool } from 'sanity/structure' // Mudamos de deskTool para structureTool
+import { structureTool } from 'sanity/structure'
 import { schemaTypes } from './schemas'
 
 export default defineConfig({
   name: 'default',
   title: 'Novavix Admin',
 
-  projectId: '70qpcg23', // Verifique se o seu ID está aqui
+  projectId: '70qpcg23', 
   dataset: 'production',
 
   basePath: '/admin',
 
-  plugins: [structureTool()], // Atualizado aqui também
+  plugins: [structureTool()],
 
   schema: {
     types: schemaTypes,
