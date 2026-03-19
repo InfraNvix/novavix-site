@@ -20,11 +20,11 @@ async function getLandingData() {
     },
     "posts": *[_type == "post"] | order(_createdAt desc)[0...3]{
       _id,
-      "tituloPost": tituloNoticia || title,
+      "tituloPost": title,
       "slug": slug.current,
       _createdAt,
-      "imagemUrl": imagemCapa.asset->url || mainImage.asset->url,
-      "resumoPost": conteudoNoticia[0].children[0].text || summary
+      "imagemUrl": mainImage.asset->url,
+      "resumoPost": body[0].children[0].text
     }
   }`;
   return await client.fetch(query);
