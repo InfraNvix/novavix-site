@@ -13,20 +13,15 @@ const client = createClient({
 
 async function getLandingData() {
   const query = `*[_type == "landingPage"][0] {
-    title,
-    subtitle
+    tituloPrincipal,   // Mudei para bater com o seu schema
+    subtitulo          // Mudei para bater com o seu schema
   }`;
   return await client.fetch(query);
 }
 
 export default async function HomePage() {
   const data = await getLandingData();
-  const azulNovavix = "#1E3A5F";
-
-  // Fallbacks (caso o Sanity esteja vazio, ele usa o texto padrão)
-  const displayTitle = data?.title || "Gestão Ocupacional sem burocracia.";
-  const displaySubtitle = data?.subtitle || "O Novavix GO centraliza seus eventos de SST, PGR e PCMSO em uma plataforma ágil, segura e 100% integrada ao eSocial.";
-
+  
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
       
