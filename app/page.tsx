@@ -11,11 +11,15 @@ const client = createClient({
 });
 
 export default async function HomePage() {
-  // Busca direta e segura
-  const data = await client.fetch(`*[_type == "landingPage"][0]`);
+  // A busca agora usa os nomes que o teste confirmou
+  const data = await client.fetch(`*[_type == "landingPage"][0]{
+    tituloHero,
+    subtituloHero
+  }`);
 
-  const title = data?.tituloPrincipal || data?.title || "Gestão Ocupacional sem burocracia.";
-const subtitle = data?.subtitulo || data?.description || "O Novavix GO centraliza seus eventos...";
+  // Se o Sanity falhar por algum motivo, mantemos o fallback
+  const title = data?.tituloHero || "Gestão Ocupacional sem burocracia.";
+  const subtitle = data?.subtituloHero || "O Novavix GO centraliza seus eventos de SST, PGR e PCMSO.";
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
@@ -40,6 +44,7 @@ const subtitle = data?.subtitulo || data?.description || "O Novavix GO centraliz
               <Zap size={14} /> Inteligência em SST & eSocial
             </div>
             
+            {/* AGORA VAI APARECER: Segurança do Trabalho Digital e Eficiente */}
             <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter leading-[0.95] mb-8 whitespace-pre-line">
               {title}
             </h1>
