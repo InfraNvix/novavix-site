@@ -11,7 +11,7 @@ const client = createClient({
   useCdn: false,
 });
 
-// 2. Busca Dinâmica de Dados (Hero e Blog combinados)
+// 2. Busca Dinâmica Unificada
 async function getLandingData() {
   const query = `{
     "landing": *[_type == "landingPage"][0]{
@@ -23,10 +23,7 @@ async function getLandingData() {
       "tituloPost": title,
       "slug": slug.current,
       _createdAt,
-      // Mudança crítica aqui: O campo de imagem no banco provavelmente se chama mainImage ou imagemCapa.
-      // O Sanity salva a imagem real dentro de .asset->url
-      "imagemUrl": mainImage.asset->url || imagemCapa.asset->url,
-      // Mudança crítica aqui: O Sanity salva o texto em uma estrutura chamada children.
+      "imagemUrl": mainImage.asset->url,
       "resumoPost": body[0].children[0].text
     }
   }`;
@@ -36,19 +33,17 @@ async function getLandingData() {
 export default async function HomePage() {
   const data = await getLandingData();
   
-  const azulNovavix = "#1E3A5F";
+  // Garantia de fallback para os textos do Hero
+  const title = data?.landing?.tituloHero || "Segurança do Trabalho Digital e Eficiente";
+  const subtitle = data?.landing?.subtituloHero || "O NOVAVIX GO é a solução simples e completa para sua Gestão SST.";
 
-  // Variáveis Hero com nomes CORRETOS
-  const title = data?.landing?.tituloHero || "Gestão Ocupacional sem burocracia.";
-  const subtitle = data?.landing?.subtituloHero || "O Novavix GO centraliza seus eventos...";
-
-  // Variável Blog (Pega até 3 posts)
+  // Variável Blog
   const posts = data?.posts || [];
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
       
-      {/* NAVBAR (Restaurada) */}
+      {/* NAVBAR */}
       <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <div className="relative w-[150px] h-[45px]">
@@ -90,7 +85,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* VISUAL PREVIEW - DARK TECH STYLE (Restaurado) */}
+          {/* VISUAL PREVIEW */}
           <div className="relative">
             <div className="bg-slate-900 rounded-[40px] aspect-video w-full overflow-hidden shadow-2xl border-[8px] border-white relative group flex flex-col items-center justify-center p-12">
               <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
@@ -103,22 +98,11 @@ export default async function HomePage() {
                 <p className="text-white/20 font-medium text-[11px] italic">Interface de Gestão em Homologação</p>
               </div>
             </div>
-            <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-3xl shadow-2xl border border-slate-50 hidden md:block">
-              <div className="flex items-center gap-4">
-                <div className="bg-emerald-500 p-3 rounded-2xl text-white">
-                  <ShieldCheck size={24} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase text-slate-400 leading-none mb-1">Status eSocial</p>
-                  <p className="font-bold text-slate-900 leading-none">100% Conformidade</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* SEÇÃO SOLUÇÕES (Restaurada) */}
+      {/* SEÇÃO SOLUÇÕES */}
       <section id="solucoes" className="py-24 bg-slate-50/50 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16">
@@ -129,7 +113,7 @@ export default async function HomePage() {
             <div className="space-y-4">
               <div className="text-blue-600"><Zap size={32} strokeWidth={3} /></div>
               <h4 className="font-bold text-xl tracking-tight">Agilidade no eSocial</h4>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Envio automatizado dos eventos S-2210, S-2220 e S-2240.</p>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Envio automatizado dos eventos de SST.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><ShieldCheck size={32} strokeWidth={3} /></div>
@@ -139,23 +123,18 @@ export default async function HomePage() {
             <div className="space-y-4">
               <div className="text-blue-600"><BarChart3 size={32} strokeWidth={3} /></div>
               <h4 className="font-bold text-xl tracking-tight">Dashboards Técnicos</h4>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Indicadores claros e objetivos em tempo real.</p>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Relatórios claros e objetivos em tempo real.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SEÇÃO DO BLOG (Nova!) */}
+      {/* SEÇÃO DO BLOG */}
       <section id="blog" className="py-24 bg-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between mb-16 gap-4">
-            <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">Novidades (Blog)</h2>
-              <div className="h-1 w-20 bg-blue-600 mt-2"></div>
-            </div>
-            <Link href="https://wa.me/5527992655561" className="flex items-center justify-center gap-3 bg-white border-2 border-slate-100 text-slate-500 px-8 py-5 rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:border-blue-200 transition-all hidden md:flex">
-                Falar com Especialista <ChevronRight size={18} />
-            </Link>
+          <div className="mb-16">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">Novidades (Blog)</h2>
+            <div className="h-1 w-20 bg-blue-600 mt-2"></div>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
@@ -181,14 +160,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* FOOTER (Restaurado) */}
+      {/* FOOTER */}
       <footer className="bg-white py-12 border-t border-slate-100 mt-12">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">© 2026 Novavix Sistemas — Todos os direitos reservados</p>
-          <div className="flex gap-8 text-[10px] font-black uppercase text-slate-400">
-             <Link href="/login" className="hover:text-blue-600">Portal do Cliente</Link>
-             <Link href="https://wa.me/5527992655561" className="hover:text-blue-600">Suporte</Link>
-          </div>
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">© 2026 Novavix Sistemas</p>
         </div>
       </footer>
     </div>
