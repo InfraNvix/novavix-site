@@ -6,7 +6,7 @@ import { Suspense } from 'react'
 const AdminStudio = dynamic(
   async () => {
     // Importamos os arquivos sem a extensão para o Next.js resolver automaticamente (.js ou .ts)
-    const config = (await import('../../../../sanity.config')).default;
+    const config = (await import('@/sanity.config')).default;
     const Studio = (await import('./Studio')).default;
     
     return () => <Studio config={config} />;
