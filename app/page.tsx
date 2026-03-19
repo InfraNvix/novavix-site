@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { ShieldCheck, Zap, BarChart3, ChevronRight, LayoutDashboard } from 'lucide-react';
 import { createClient } from 'next-sanity';
 
-// 1. Configuração do Cliente Sanity
+// 1. Cliente Sanity
 const client = createClient({
   projectId: '70qpcg23',
   dataset: 'production',
@@ -11,23 +11,11 @@ const client = createClient({
   useCdn: false,
 });
 
-// 2. Função de busca (Fetch) com os nomes prováveis do seu Schema
-async function getLandingData() {
-  const query = `*[_type == "landingPage"][0] {
-    tituloPrincipal,
-    subtitulo,
-    "slug": slug.current
-  }`;
-  return await client.fetch(query);
-}
-
 export default async function HomePage() {
-  // 3. Buscando os dados
-  const data = await getLandingData();
-  const azulNovavix = "#1E3A5F";
+  // 2. Busca de dados simplificada diretamente dentro da função
+  const data = await client.fetch(`*[_type == "landingPage"][0]{tituloPrincipal, subtitulo}`);
 
-  // 4. DEFININDO AS VARIÁVEIS (Isso resolve o erro "Cannot find name")
-  // Se o Sanity retornar vazio, ele usa o texto padrão (fallback)
+  // 3. Garantia de que as variáveis existem (Fallbacks)
   const displayTitle = data?.tituloPrincipal || "Gestão Ocupacional sem burocracia.";
   const displaySubtitle = data?.subtitulo || "O Novavix GO centraliza seus eventos de SST, PGR e PCMSO em uma plataforma ágil, segura e 100% integrada ao eSocial.";
 
@@ -40,7 +28,6 @@ export default async function HomePage() {
           <div className="relative w-[150px] h-[45px]">
             <Image src="/logo-novavix.png" alt="Novavix" fill className="object-contain object-left" />
           </div>
-          
           <div className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-slate-400">
             <a href="#solucoes" className="hover:text-blue-600 transition-colors">Soluções</a>
             <a href="#tecnologia" className="hover:text-blue-600 transition-colors">Tecnologia</a>
@@ -59,12 +46,10 @@ export default async function HomePage() {
               <Zap size={14} /> Inteligência em SST & eSocial
             </div>
             
-            {/* TÍTULO DINÂMICO REVISADO */}
             <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter leading-[0.95] mb-8 whitespace-pre-line">
               {displayTitle}
             </h1>
 
-            {/* SUBTÍTULO DINÂMICO REVISADO */}
             <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-[480px] mb-10">
               {displaySubtitle}
             </p>
@@ -84,4 +69,43 @@ export default async function HomePage() {
               <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
               <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 mb-6 border border-blue-500/30">
-                  <Layout
+                  <LayoutDashboard size={32} />
+                </div>
+                <p className="text-white/60 font-black uppercase tracking-[0.4em] text-[10px]">Novavix GO</p>
+                <div className="h-[2px] w-12 bg-blue-500/40 my-3"></div>
+                <p className="text-white/20 font-medium text-[11px] italic">Interface de Gestão em Homologação</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SOLUÇÕES */}
+      <section id="solucoes" className="py-24 bg-slate-50/50 scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="mb-16">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">O que entregamos</h2>
+            <div className="h-1 w-20 bg-blue-600 mt-2"></div>
+          </div>
+          <div className="grid md:grid-cols-3 gap-12">
+            <div className="space-y-4">
+              <div className="text-blue-600"><Zap size={32} strokeWidth={3} /></div>
+              <h4 className="font-bold text-xl tracking-tight">Agilidade no eSocial</h4>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Envio automatizado dos eventos S-2210, S-2220 e S-2240.</p>
+            </div>
+            <div className="space-y-4">
+              <div className="text-blue-600"><ShieldCheck size={32} strokeWidth={3} /></div>
+              <h4 className="font-bold text-xl tracking-tight">Gestão de Documentos</h4>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">PGR e PCMSO sempre atualizados.</p>
+            </div>
+            <div className="space-y-4">
+              <div className="text-blue-600"><BarChart3 size={32} strokeWidth={3} /></div>
+              <h4 className="font-bold text-xl tracking-tight">Dashboards Técnicos</h4>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Indicadores claros e objetivos em tempo real.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="bg-white py-12 border-t border-slate-100">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
