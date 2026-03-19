@@ -1,23 +1,28 @@
 'use client';
 
+import { NextStudio } from 'next-sanity/studio';
 import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
 
-// Importação dinâmica com proteção total contra SSR
-const NextStudio = dynamic(
-  () => import('next-sanity/studio').then((mod) => mod.NextStudio),
-  { 
-    ssr: false,
-    loading: () => <div className="min-h-screen bg-white flex items-center justify-center font-bold text-slate-400 uppercase tracking-widest text-xs animate-pulse">Carregando Novavix Admin...</div>
-  }
+// Importação dinâmica do config para isolar o build
+const AdminStudio = dynamic(
+  async () => {
+    const config = (await import('../../../../sanity.config')).default;
+    return () => <NextStudio config={config} />;
+  },
+  { ssr: false }
 );
 
-// Importamos o config dentro do componente para evitar que ele seja processado no topo do arquivo
 export default function AdminPage() {
-  const config = require('../../../../sanity.config').default;
-
   return (
     <div className="fixed inset-0 z-[9999] bg-white overflow-auto">
-      <NextStudio config={config} />
+      <Suspense fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center font-bold text-slate-400 uppercase tracking-widest text-[10px] animate-pulse">
+          Carregando Painel Novavix...
+        </div>
+      }>
+        <AdminStudio />
+      </Suspense>
     </div>
   );
 }
