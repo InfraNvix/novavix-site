@@ -4,12 +4,12 @@ import { NextStudio } from 'next-sanity/studio';
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 
-// Importação dinâmica do config para isolar o build
+// Forçamos o import a ser feito APENAS no navegador, 
+// escondendo o caminho do arquivo do compilador de build do servidor.
 const AdminStudio = dynamic(
-  async () => {
-    const config = (await import('../../../../sanity.config')).default;
-    return () => <NextStudio config={config} />;
-  },
+  () => import('../../../../sanity.config').then((mod) => {
+    return (props: any) => <NextStudio config={mod.default} {...props} />;
+  }),
   { ssr: false }
 );
 
@@ -18,7 +18,7 @@ export default function AdminPage() {
     <div className="fixed inset-0 z-[9999] bg-white overflow-auto">
       <Suspense fallback={
         <div className="min-h-screen bg-white flex items-center justify-center font-bold text-slate-400 uppercase tracking-widest text-[10px] animate-pulse">
-          Carregando Painel Novavix...
+          Iniciando Novavix Admin...
         </div>
       }>
         <AdminStudio />
