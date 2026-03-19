@@ -12,7 +12,7 @@ const client = createClient({
 
 export default async function HomePage() {
   // Busca direta e segura
-  const data = await client.fetch(`*[_type == "landingPage"][0]{tituloPrincipal, subtitulo}`);
+  const data = await client.fetch(`*[_type == "landingPage"][0]{tituloPrincipal, "subtitulo": subtitulo_descricao || subtitulo}`);
 
   const title = data?.tituloPrincipal || "Gestão Ocupacional sem burocracia.";
   const subtitle = data?.subtitulo || "O Novavix GO centraliza seus eventos de SST, PGR e PCMSO.";
