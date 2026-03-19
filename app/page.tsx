@@ -12,10 +12,10 @@ const client = createClient({
 
 export default async function HomePage() {
   // Busca direta e segura
-  const data = await client.fetch(`*[_type == "landingPage"][0]{tituloPrincipal, "subtitulo": subtitulo_descricao || subtitulo}`);
+  const data = await client.fetch(`*[_type == "landingPage"][0]`);
 
-  const title = data?.tituloPrincipal || "Gestão Ocupacional sem burocracia.";
-  const subtitle = data?.subtitulo || "O Novavix GO centraliza seus eventos de SST, PGR e PCMSO.";
+  const title = data?.tituloPrincipal || data?.title || "Gestão Ocupacional sem burocracia.";
+const subtitle = data?.subtitulo || data?.description || "O Novavix GO centraliza seus eventos...";
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
