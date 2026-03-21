@@ -125,7 +125,7 @@ export default async function HomePage() {
                     )}
                   </div>
                   <h4 className="font-bold text-lg tracking-tight text-slate-900 mb-2 leading-tight">{post.tituloPost}</h4>
-                  <p className="text-slate-500 text-sm leading-relaxed mb-4 line-clamp-2">{post.resumoPost}</p>
+                  <p className="text-slate-500 text-sm leading-relaxed mb-4">{post.resumoPost}</p>
                   <div className="flex justify-between items-center border-t border-slate-50 pt-4">
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{new Date(post._createdAt).toLocaleDateString()}</p>
                     {post.slug && (
