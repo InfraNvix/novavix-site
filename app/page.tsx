@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { ShieldCheck, Zap, BarChart3, ChevronRight, LayoutDashboard, Rss } from 'lucide-react';
 import { createClient } from 'next-sanity';
 
+// 1. CONFIGURAÇÕES ANTI-CACHE (MANTIDAS)
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -10,9 +11,10 @@ const client = createClient({
   projectId: '70qpcg23',
   dataset: 'production',
   apiVersion: '2024-03-19',
-  useCdn: false,
+  useCdn: false, // Busca direta no banco para evitar dados antigos
 });
 
+// 2. BUSCA DE DADOS (QUERY AJUSTADA PARA A IMAGEM CORRETA)
 async function getLandingData() {
   const query = `{
     "landing": *[_type == "landingPage"][0]{
@@ -24,11 +26,14 @@ async function getLandingData() {
       "tituloPost": title,
       "slug": slug.current,
       _createdAt,
+      // AJUSTE CRÍTICO AQUI: Buscamos mainImage.asset->url
+      // O Sanity salva a imagem real dentro de .asset->url
       "imagemUrl": mainImage.asset->url,
       "resumoPost": body[0].children[0].text
     }
   }`;
   
+  // O 'no-store' reforça que o Next.js não deve salvar este resultado.
   return await client.fetch(query, {}, { 
     cache: 'no-store', 
     next: { revalidate: 0 } 
@@ -38,6 +43,7 @@ async function getLandingData() {
 export default async function HomePage() {
   const data = await getLandingData();
   
+  // Variáveis com Fallbacks
   const title = data?.landing?.tituloHero || "Segurança do Trabalho Digital e Eficiente";
   const subtitle = data?.landing?.subtituloHero || "O NOVAVIX GO centraliza seus eventos de SST, PGR e PCMSO.";
   const posts = data?.posts || [];
@@ -45,6 +51,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
       
+      {/* NAVBAR */}
       <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <div className="relative w-[150px] h-[45px]">
@@ -60,13 +67,14 @@ export default async function HomePage() {
         </div>
       </nav>
 
+      {/* HERO SECTION */}
       <section className="pt-40 pb-20 px-6">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
           <div>
             <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
               <Zap size={14} /> Inteligência em SST & eSocial
             </div>
-            <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter leading-[0.95] mb-8 whitespace-pre-line uppercase italic">
+            <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter leading-[0.95] mb-8 whitespace-pre-lineuppercase italic">
               {title}
             </h1>
             <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-[480px] mb-10">
@@ -79,13 +87,15 @@ export default async function HomePage() {
             </div>
           </div>
 
+          {/* DASHBOARD PREVIEW */}
           <div className="relative">
-            <div className="bg-slate-900 rounded-[40px] aspect-video w-full overflow-hidden shadow-2xl border-[8px] border-white relative flex flex-col items-center justify-center p-12">
+            <div className="bg-slate-900 rounded-[40px] aspect-video w-full overflow-hidden shadow-2xl border-[8px] border-white relative group flex flex-col items-center justify-center p-12">
               <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 mb-6 border border-blue-500/30">
                   <LayoutDashboard size={32} />
                 </div>
                 <p className="text-white/60 font-black uppercase tracking-[0.4em] text-[10px]">Novavix GO</p>
+                <div className="h-[2px] w-12 bg-blue-500/40 my-3"></div>
                 <p className="text-white/20 font-medium text-[11px] italic mt-4 font-black uppercase tracking-widest">Interface de Gestão</p>
               </div>
             </div>
@@ -93,7 +103,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* SEÇÃO SOLUÇÕES - RESTAURADA */}
+      {/* SEÇÃO SOLUÇÕES */}
       <section id="solucoes" className="py-24 bg-slate-50/50 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16">
@@ -120,27 +130,37 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* SEÇÃO BLOG - TEXTO COMPLETO */}
+      {/* SEÇÃO DO BLOG */}
       <section id="blog" className="py-24 bg-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16">
             <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">Novidades (Blog)</h2>
             <div className="h-1 w-20 bg-blue-600 mt-2"></div>
           </div>
+          
           <div className="grid md:grid-cols-3 gap-8">
             {posts.length > 0 ? (
               posts.map((post: any) => (
-                <div key={post._id} className="bg-white rounded-3xl p-6 border border-slate-100 group shadow-sm">
-                  <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-6 bg-slate-100">
+                <div key={post._id} className="bg-white rounded-3xl p-6 border border-slate-100 group shadow-sm hover:shadow-md transition-all">
+                  <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-6 bg-slate-50">
                     {post.imagemUrl ? (
-                      <Image src={post.imagemUrl} alt={post.tituloPost} fill className="object-cover" />
+                      <Image 
+                        src={post.imagemUrl} 
+                        alt={post.tituloPost} 
+                        fill 
+                        className="object-cover group-hover:scale-105 transition-transform duration-300" 
+                      />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-slate-300"><Rss size={40} /></div>
                     )}
                   </div>
                   <h4 className="font-bold text-lg tracking-tight text-slate-900 mb-2 leading-tight">{post.tituloPost}</h4>
-                  {/* Removida a trava de linhas para exibir todo o conteúdo */}
-                  <p className="text-slate-500 text-sm leading-relaxed mb-6">{post.resumoPost}</p>
+                  
+                  {/* Texto sem line-clamp para mostrar tudo */}
+                  <p className="text-slate-500 text-sm leading-relaxed mb-4">
+                    {post.resumoPost}
+                  </p>
+
                   <div className="flex justify-between items-center border-t border-slate-50 pt-4">
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{new Date(post._createdAt).toLocaleDateString()}</p>
                     {post.slug && (
@@ -152,12 +172,13 @@ export default async function HomePage() {
                 </div>
               ))
             ) : (
-              <p className="text-slate-500 italic font-black uppercase tracking-widest">Aguardando publicações...</p>
+              <p className="text-slate-500 font-medium italic uppercase font-black tracking-widest">Aguardando novas publicações...</p>
             )}
           </div>
         </div>
       </section>
 
+      {/* FOOTER */}
       <footer className="bg-white py-12 border-t border-slate-100 mt-12 text-center">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">© 2026 Novavix Sistemas — Gestão SST Inteligente</p>
       </footer>
