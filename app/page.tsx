@@ -3,15 +3,14 @@ import Image from 'next/image';
 import { ShieldCheck, Zap, BarChart3, ChevronRight, LayoutDashboard, Rss } from 'lucide-react';
 import { createClient } from 'next-sanity';
 
-// 1. COMANDOS DE FORÇA BRUTA (EXTREMAMENTE IMPORTANTES)
-export const dynamic = 'force-dynamic'; // Impede o site de ser estático
-export const revalidate = 0;           // Define o tempo de cache como zero segundos
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const client = createClient({
   projectId: '70qpcg23',
   dataset: 'production',
   apiVersion: '2024-03-19',
-  useCdn: false, // Força a busca direta no banco, sem passar pela rede de cache do Sanity
+  useCdn: false,
 });
 
 async function getLandingData() {
@@ -30,7 +29,6 @@ async function getLandingData() {
     }
   }`;
   
-  // Adicionamos tags de cache no fetch para garantir que o Next.js não salve o resultado
   return await client.fetch(query, {}, { 
     cache: 'no-store', 
     next: { revalidate: 0 } 
@@ -40,8 +38,8 @@ async function getLandingData() {
 export default async function HomePage() {
   const data = await getLandingData();
   
-  const title = data?.landing?.tituloHero || "Gestão Ocupacional sem burocracia.";
-  const subtitle = data?.landing?.subtituloHero || "O Novavix GO centraliza seus eventos...";
+  const title = data?.landing?.tituloHero || "Segurança do Trabalho Digital e Eficiente";
+  const subtitle = data?.landing?.subtituloHero || "O NOVAVIX GO é o software perfeito para empresas que precisam de uma solução simples e ágil.";
   const posts = data?.posts || [];
 
   return (
@@ -83,9 +81,8 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* DASHBOARD PREVIEW */}
           <div className="relative">
-            <div className="bg-slate-900 rounded-[40px] aspect-video w-full overflow-hidden shadow-2xl border-[8px] border-white relative group flex flex-col items-center justify-center p-12">
+            <div className="bg-slate-900 rounded-[40px] aspect-video w-full overflow-hidden shadow-2xl border-[8px] border-white relative flex flex-col items-center justify-center p-12">
               <div className="relative z-10 flex flex-col items-center text-center">
                 <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 mb-6 border border-blue-500/30">
                   <LayoutDashboard size={32} />
@@ -99,7 +96,34 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* SEÇÃO DO BLOG */}
+      {/* SEÇÃO SOLUÇÕES - RESTAURADA */}
+      <section id="solucoes" className="py-24 bg-slate-50/50 scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="mb-16">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">O que entregamos</h2>
+            <div className="h-1 w-20 bg-blue-600 mt-2"></div>
+          </div>
+          <div className="grid md:grid-cols-3 gap-12">
+            <div className="space-y-4">
+              <div className="text-blue-600"><Zap size={32} strokeWidth={3} /></div>
+              <h4 className="font-bold text-xl tracking-tight">Agilidade no eSocial</h4>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Envio automatizado dos eventos S-2210, S-2220 e S-2240 com total conformidade.</p>
+            </div>
+            <div className="space-y-4">
+              <div className="text-blue-600"><ShieldCheck size={32} strokeWidth={3} /></div>
+              <h4 className="font-bold text-xl tracking-tight">Gestão de Documentos</h4>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Controle total sobre PGR e PCMSO, sempre atualizados e fáceis de acessar.</p>
+            </div>
+            <div className="space-y-4">
+              <div className="text-blue-600"><BarChart3 size={32} strokeWidth={3} /></div>
+              <h4 className="font-bold text-xl tracking-tight">Dashboards Técnicos</h4>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Indicadores estratégicos em tempo real para uma tomada de decisão segura.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SEÇÃO DO BLOG - TEXTO COMPLETO */}
       <section id="blog" className="py-24 bg-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16">
@@ -118,14 +142,18 @@ export default async function HomePage() {
                         alt={post.tituloPost} 
                         fill 
                         className="object-cover group-hover:scale-105 transition-transform duration-300" 
-                        unoptimized // Garante que o Next não use cache na imagem também
                       />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-slate-300"><Rss size={40} /></div>
                     )}
                   </div>
                   <h4 className="font-bold text-lg tracking-tight text-slate-900 mb-2 leading-tight">{post.tituloPost}</h4>
-                  <p className="text-slate-500 text-sm leading-relaxed mb-4">{post.resumoPost}</p>
+                  
+                  {/* TEXTO COMPLETO SEM O LINE-CLAMP-2 */}
+                  <p className="text-slate-500 text-sm leading-relaxed mb-4">
+                    {post.resumoPost}
+                  </p>
+
                   <div className="flex justify-between items-center border-t border-slate-50 pt-4">
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{new Date(post._createdAt).toLocaleDateString()}</p>
                     {post.slug && (
@@ -141,11 +169,3 @@ export default async function HomePage() {
             )}
           </div>
         </div>
-      </section>
-
-      <footer className="bg-white py-12 border-t border-slate-100 mt-12 text-center">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">© 2026 Novavix Sistemas</p>
-      </footer>
-    </div>
-  );
-}
