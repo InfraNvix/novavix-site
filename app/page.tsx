@@ -3,19 +3,17 @@ import Image from 'next/image';
 import { ShieldCheck, Zap, BarChart3, ChevronRight, LayoutDashboard, Rss } from 'lucide-react';
 import { createClient } from 'next-sanity';
 
-// 1. CONFIGURAÇÕES DE FORÇA BRUTA (ANTI-CACHE)
-// Estas linhas garantem que o Render busque dados novos a cada acesso.
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// 1. COMANDOS DE FORÇA BRUTA (EXTREMAMENTE IMPORTANTES)
+export const dynamic = 'force-dynamic'; // Impede o site de ser estático
+export const revalidate = 0;           // Define o tempo de cache como zero segundos
 
 const client = createClient({
   projectId: '70qpcg23',
   dataset: 'production',
   apiVersion: '2024-03-19',
-  useCdn: false, // Busca direta no banco para evitar dados antigos
+  useCdn: false, // Força a busca direta no banco, sem passar pela rede de cache do Sanity
 });
 
-// 2. BUSCA DE DADOS (QUERY AJUSTADA PARA IMAGEM)
 async function getLandingData() {
   const query = `{
     "landing": *[_type == "landingPage"][0]{
@@ -27,13 +25,12 @@ async function getLandingData() {
       "tituloPost": title,
       "slug": slug.current,
       _createdAt,
-      // AJUSTE PARA PEGAR A URL DA IMAGEM REAL
       "imagemUrl": mainImage.asset->url,
       "resumoPost": body[0].children[0].text
     }
   }`;
   
-  // O 'no-store' reforça que o Next.js não deve salvar este resultado.
+  // Adicionamos tags de cache no fetch para garantir que o Next.js não salve o resultado
   return await client.fetch(query, {}, { 
     cache: 'no-store', 
     next: { revalidate: 0 } 
@@ -43,9 +40,8 @@ async function getLandingData() {
 export default async function HomePage() {
   const data = await getLandingData();
   
-  // Variáveis da Landing Page com textos do Sanity
   const title = data?.landing?.tituloHero || "Gestão Ocupacional sem burocracia.";
-  const subtitle = data?.landing?.subtituloHero || "O Novavix GO centraliza seus eventos de SST.";
+  const subtitle = data?.landing?.subtituloHero || "O Novavix GO centraliza seus eventos...";
   const posts = data?.posts || [];
 
   return (
@@ -87,5 +83,69 @@ export default async function HomePage() {
             </div>
           </div>
 
+          {/* DASHBOARD PREVIEW */}
           <div className="relative">
-            <div className="bg-slate-900 rounded-[40px] aspect-video w-full overflow-hidden
+            <div className="bg-slate-900 rounded-[40px] aspect-video w-full overflow-hidden shadow-2xl border-[8px] border-white relative group flex flex-col items-center justify-center p-12">
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 mb-6 border border-blue-500/30">
+                  <LayoutDashboard size={32} />
+                </div>
+                <p className="text-white/60 font-black uppercase tracking-[0.4em] text-[10px]">Novavix GO</p>
+                <div className="h-[2px] w-12 bg-blue-500/40 my-3"></div>
+                <p className="text-white/20 font-medium text-[11px] italic">Interface de Gestão em Homologação</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SEÇÃO DO BLOG */}
+      <section id="blog" className="py-24 bg-white scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="mb-16">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">Novidades (Blog)</h2>
+            <div className="h-1 w-20 bg-blue-600 mt-2"></div>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {posts.length > 0 ? (
+              posts.map((post: any) => (
+                <div key={post._id} className="bg-white rounded-3xl p-6 border border-slate-100 group shadow-sm hover:shadow-md transition-all">
+                  <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-6 bg-slate-50">
+                    {post.imagemUrl ? (
+                      <Image 
+                        src={post.imagemUrl} 
+                        alt={post.tituloPost} 
+                        fill 
+                        className="object-cover group-hover:scale-105 transition-transform duration-300" 
+                        unoptimized // Garante que o Next não use cache na imagem também
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-slate-300"><Rss size={40} /></div>
+                    )}
+                  </div>
+                  <h4 className="font-bold text-lg tracking-tight text-slate-900 mb-2 leading-tight">{post.tituloPost}</h4>
+                  <p className="text-slate-500 text-sm leading-relaxed mb-4 line-clamp-2">{post.resumoPost}</p>
+                  <div className="flex justify-between items-center border-t border-slate-50 pt-4">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{new Date(post._createdAt).toLocaleDateString()}</p>
+                    {post.slug && (
+                      <Link href={post.slug} target="_blank" className="text-blue-600 font-bold text-[9px] uppercase tracking-widest hover:underline flex items-center gap-1">
+                        Ler notícia <ChevronRight size={12} />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-slate-500 font-medium">Aguardando novas publicações...</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <footer className="bg-white py-12 border-t border-slate-100 mt-12 text-center">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">© 2026 Novavix Sistemas</p>
+      </footer>
+    </div>
+  );
+}
