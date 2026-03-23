@@ -29,3 +29,5 @@ Thumbs.db
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
+
+*package-lock.json
