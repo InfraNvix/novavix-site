@@ -24,8 +24,6 @@ async function getLandingData() {
       // MANTEMOS O SLUG QUE JÁ ESTÁ OK
       "slug": slug.current,
       _createdAt,
-      // AJUSTE CRÍTICO AQUI: Buscamos mainImage.asset->url
-      // O Sanity salva a imagem real dentro de .asset->url
       "imagemUrl": mainImage.asset->url,
       "resumoPost": body[0].children[0].text
     }

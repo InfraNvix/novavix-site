@@ -1,19 +1,76 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '../../../lib/supabaseClient';
+import { NextResponse } from 'next/server'
+import { getSupabaseAdminClient } from '@/lib/supabase/admin'
+import { parseSyncPayload } from '@/lib/validators/sync'
 
-export async function POST(request: Request) {
+type ApiErrorCode =
+  | 'UNAUTHORIZED'
+  | 'INVALID_JSON'
+  | 'VALIDATION_ERROR'
+  | 'CONFIG_ERROR'
+  | 'DATABASE_ERROR'
+  | 'INTERNAL_ERROR'
+
+function errorResponse(
+  status: number,
+  code: ApiErrorCode,
+  message: string,
+  details?: string[]
+): NextResponse {
+  return NextResponse.json(
+    {
+      ok: false,
+      error: {
+        code,
+        message,
+        details: details ?? [],
+      },
+    },
+    { status }
+  )
+}
+
+export async function POST(request: Request): Promise<NextResponse> {
   try {
-    const body = await request.json();
-    const { cnpj, nome_cliente, tipo_documento, url_pdf } = body;
+    const expectedApiKey = process.env.NOVAVIX_SYNC_API_KEY
+    if (!expectedApiKey) {
+      return errorResponse(500, 'CONFIG_ERROR', 'Sync endpoint is not configured.')
+    }
 
-    const { error } = await supabase
-      .from('documentos')
-      .insert([{ cnpj, nome_cliente, tipo_documento, url_pdf }]);
+    const providedApiKey = request.headers.get('x-api-key')
+    if (!providedApiKey || providedApiKey !== expectedApiKey) {
+      return errorResponse(401, 'UNAUTHORIZED', 'Invalid API key.')
+    }
 
-    if (error) throw error;
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return errorResponse(400, 'INVALID_JSON', 'Request body must be valid JSON.')
+    }
 
-    return NextResponse.json({ message: 'Sincronizado com sucesso' }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const parsed = parseSyncPayload(body)
+    if (!parsed.success) {
+      return errorResponse(422, 'VALIDATION_ERROR', 'Payload validation failed.', parsed.errors)
+    }
+
+    const supabase = getSupabaseAdminClient()
+    const { error } = await supabase.from('documentos').insert([parsed.data])
+
+    if (error) {
+      return errorResponse(500, 'DATABASE_ERROR', 'Could not persist sync payload.', [
+        error.message,
+      ])
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        message: 'Sincronizado com sucesso',
+      },
+      { status: 200 }
+    )
+  } catch {
+    return errorResponse(500, 'INTERNAL_ERROR', 'Unexpected error while processing sync.')
   }
 }
+
