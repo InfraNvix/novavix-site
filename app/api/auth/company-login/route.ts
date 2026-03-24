@@ -1,16 +1,26 @@
 import { NextResponse } from 'next/server'
+import { isDemoCnpj } from '@/lib/auth/cnpj'
+import { DEMO_COMPANY_AUTH, DEMO_MODE_ENABLED } from '@/lib/auth/demo'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
+import { getClientIp } from '@/lib/security/http'
+import { checkRateLimit } from '@/lib/security/rate-limit'
 import { parseCompanyLoginPayload } from '@/lib/validators/company-login'
 
-type ApiErrorCode = 'INVALID_JSON' | 'VALIDATION_ERROR' | 'AUTH_FAILED' | 'INTERNAL_ERROR'
+type ApiErrorCode =
+  | 'INVALID_JSON'
+  | 'VALIDATION_ERROR'
+  | 'AUTH_FAILED'
+  | 'TOO_MANY_REQUESTS'
+  | 'INTERNAL_ERROR'
 
 function errorResponse(
   status: number,
   code: ApiErrorCode,
   message: string,
-  details?: string[]
+  details?: string[],
+  headers?: Record<string, string>
 ): NextResponse {
-  return NextResponse.json(
+  const response = NextResponse.json(
     {
       ok: false,
       error: {
@@ -21,10 +31,37 @@ function errorResponse(
     },
     { status }
   )
+  if (headers) {
+    for (const [key, value] of Object.entries(headers)) {
+      response.headers.set(key, value)
+    }
+  }
+  return response
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
+    const ip = getClientIp(request)
+    const rateLimit = checkRateLimit(`company-login:${ip}`, { limit: 8, windowMs: 60_000 })
+    if (!rateLimit.allowed) {
+      return errorResponse(
+        429,
+        'TOO_MANY_REQUESTS',
+        'Too many attempts. Try again later.',
+        [],
+        {
+          'Retry-After': String(rateLimit.retryAfterSec),
+          'X-RateLimit-Limit': String(rateLimit.limit),
+          'X-RateLimit-Remaining': String(rateLimit.remaining),
+        }
+      )
+    }
+
+    const contentLength = Number(request.headers.get('content-length') ?? '0')
+    if (Number.isFinite(contentLength) && contentLength > 8_000) {
+      return errorResponse(413, 'VALIDATION_ERROR', 'Payload too large.')
+    }
+
     let body: unknown
     try {
       body = await request.json()
@@ -35,6 +72,26 @@ export async function POST(request: Request): Promise<NextResponse> {
     const parsed = parseCompanyLoginPayload(body)
     if (!parsed.success) {
       return errorResponse(422, 'VALIDATION_ERROR', 'Dados de login invalidos.', parsed.errors)
+    }
+
+    if (DEMO_MODE_ENABLED) {
+      const validDemoCnpj = isDemoCnpj(parsed.data.cnpj)
+      const validDemoPassword = parsed.data.password === DEMO_COMPANY_AUTH.password
+
+      if (!validDemoCnpj || !validDemoPassword) {
+        return errorResponse(401, 'AUTH_FAILED', 'Credenciais demo invalidas.')
+      }
+
+      return NextResponse.json(
+        {
+          ok: true,
+          data: {
+            email: DEMO_COMPANY_AUTH.email,
+            role: 'empresa',
+          },
+        },
+        { status: 200 }
+      )
     }
 
     const admin = getSupabaseAdminClient()
@@ -66,4 +123,3 @@ export async function POST(request: Request): Promise<NextResponse> {
     return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao processar login da empresa.')
   }
 }
-
