@@ -23,11 +23,11 @@ function now(): number {
 
 function cleanup(): void {
   const current = now()
-  for (const [key, state] of store.entries()) {
+  store.forEach((state, key) => {
     if (state.resetAt <= current) {
       store.delete(key)
     }
-  }
+  })
 }
 
 export function checkRateLimit(key: string, options: RateLimitOptions): RateLimitResult {
@@ -61,4 +61,3 @@ export function checkRateLimit(key: string, options: RateLimitOptions): RateLimi
     retryAfterSec,
   }
 }
-
