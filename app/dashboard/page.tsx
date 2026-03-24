@@ -54,15 +54,19 @@ export default function DashboardPage() {
         .maybeSingle()
 
       if (profileData?.role) {
+        const companyRow = Array.isArray(profileData.companies)
+          ? profileData.companies[0]
+          : profileData.companies
+
         setAccessProfile({
           role: profileData.role as UserRole,
-          company: profileData.companies
+          company: companyRow
             ? ({
-                id: profileData.companies.id,
-                cnpj: profileData.companies.cnpj,
-                razao_social: profileData.companies.razao_social,
-                nome_fantasia: profileData.companies.nome_fantasia,
-                status: profileData.companies.status,
+                id: companyRow.id,
+                cnpj: companyRow.cnpj,
+                razao_social: companyRow.razao_social,
+                nome_fantasia: companyRow.nome_fantasia,
+                status: companyRow.status,
               } as CompanyProfile)
             : null,
         })
