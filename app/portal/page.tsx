@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
+import { DEMO_COMPANY_AUTH, DEMO_MODE_ENABLED } from '@/lib/auth/demo'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
 export default function PortalPage() {
@@ -10,9 +11,33 @@ export default function PortalPage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  const supabase = useMemo(() => getSupabaseBrowserClient(), [])
+  const supabase = useMemo(() => {
+    if (DEMO_MODE_ENABLED) {
+      return null
+    }
+    return getSupabaseBrowserClient()
+  }, [])
 
   useEffect(() => {
+    if (DEMO_MODE_ENABLED) {
+      setUser({
+        id: 'demo-legacy-user',
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+        email: DEMO_COMPANY_AUTH.email,
+      } as User)
+      setLoading(false)
+      return
+    }
+
+    if (!supabase) {
+      router.push('/login')
+      setLoading(false)
+      return
+    }
+
     const getUser = async () => {
       const {
         data: { session },
@@ -32,6 +57,17 @@ export default function PortalPage() {
   }, [router, supabase])
 
   const handleLogout = async () => {
+    if (DEMO_MODE_ENABLED) {
+      await fetch('/api/auth/demo-logout', { method: 'POST' })
+      router.push('/login')
+      return
+    }
+
+    if (!supabase) {
+      router.push('/login')
+      return
+    }
+
     await supabase.auth.signOut()
     router.push('/')
   }
@@ -102,4 +138,3 @@ export default function PortalPage() {
     </div>
   )
 }
-

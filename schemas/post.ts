@@ -5,12 +5,12 @@ export default {
   fields: [
     {
       name: 'title',
-      title: 'Título da Notícia',
+      title: 'Titulo da Noticia',
       type: 'string',
     },
     {
       name: 'slug',
-      title: 'Link Amigável (Slug)',
+      title: 'Link Amigavel (Slug)',
       type: 'slug',
       options: { source: 'title', maxLength: 96 },
     },
@@ -22,12 +22,12 @@ export default {
     },
     {
       name: 'publishedAt',
-      title: 'Data de Publicação',
+      title: 'Data de Publicacao',
       type: 'datetime',
     },
     {
       name: 'body',
-      title: 'Conteúdo da Notícia',
+      title: 'Conteudo da Noticia',
       type: 'array',
       of: [{ type: 'block' }],
     },

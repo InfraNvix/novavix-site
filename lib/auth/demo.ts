@@ -1,10 +1,10 @@
 import { isUserRole, type UserRole } from '@/lib/auth/roles'
 
-export const DEMO_MODE_ENABLED = true
+export const DEMO_MODE_ENABLED = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 export const DEMO_AUTH_COOKIE_NAME = 'novavix_demo_role'
 
 export const DEMO_COMPANY_AUTH = {
-  cnpj: '12345678000195',
+  cnpj: '67716319000199',
   password: 'Demo@12345',
   email: 'empresa.demo@novavix.local',
   razaoSocial: 'Empresa Demo Novavix LTDA',
@@ -52,7 +52,7 @@ export const DEMO_COMPANIES: DemoCompany[] = [
   },
   {
     id: 'demo-company-2',
-    cnpj: '11222333000181',
+    cnpj: '78420128000100',
     razaoSocial: 'Metalurgica Horizonte S.A.',
     nomeFantasia: 'Horizonte Metal',
     status: 'active',
@@ -64,7 +64,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     id: 'emp-001',
     companyId: 'demo-company-1',
     nome: 'Ana Souza',
-    cpf: '12345678901',
+    cpf: '30300795203',
     whatsapp: '27999110001',
     email: 'ana.souza@novavixdemo.com',
     ativo: true,
@@ -78,7 +78,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     id: 'emp-002',
     companyId: 'demo-company-1',
     nome: 'Carlos Lima',
-    cpf: '32165498700',
+    cpf: '64430524041',
     whatsapp: '27999110002',
     email: 'carlos.lima@novavixdemo.com',
     ativo: true,
@@ -92,7 +92,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     id: 'emp-003',
     companyId: 'demo-company-1',
     nome: 'Fernanda Rocha',
-    cpf: '78912345678',
+    cpf: '66884525614',
     whatsapp: '27999110003',
     email: 'fernanda.rocha@novavixdemo.com',
     ativo: true,
@@ -106,7 +106,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     id: 'emp-004',
     companyId: 'demo-company-1',
     nome: 'Joao Pedro',
-    cpf: '45678912345',
+    cpf: '41610275241',
     whatsapp: '27999110004',
     email: 'joao.pedro@novavixdemo.com',
     ativo: false,
@@ -120,7 +120,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     id: 'emp-005',
     companyId: 'demo-company-1',
     nome: 'Marina Alves',
-    cpf: '65432198701',
+    cpf: '97464107500',
     whatsapp: '27999110005',
     email: 'marina.alves@novavixdemo.com',
     ativo: true,
@@ -134,7 +134,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     id: 'emp-006',
     companyId: 'demo-company-1',
     nome: 'Rafael Martins',
-    cpf: '95175385246',
+    cpf: '69276853910',
     whatsapp: '27999110006',
     email: 'rafael.martins@novavixdemo.com',
     ativo: true,
@@ -148,7 +148,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     id: 'emp-007',
     companyId: 'demo-company-2',
     nome: 'Bianca Costa',
-    cpf: '14725836900',
+    cpf: '88024110504',
     whatsapp: '31988120001',
     email: 'bianca.costa@horizonte.com',
     ativo: true,
@@ -162,7 +162,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     id: 'emp-008',
     companyId: 'demo-company-2',
     nome: 'Diego Nunes',
-    cpf: '36925814725',
+    cpf: '12728351708',
     whatsapp: '31988120002',
     email: 'diego.nunes@horizonte.com',
     ativo: true,
@@ -176,7 +176,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     id: 'emp-009',
     companyId: 'demo-company-2',
     nome: 'Elaine Prado',
-    cpf: '25814736984',
+    cpf: '93209877777',
     whatsapp: '31988120003',
     email: 'elaine.prado@horizonte.com',
     ativo: true,
@@ -190,7 +190,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     id: 'emp-010',
     companyId: 'demo-company-2',
     nome: 'Gustavo Vieira',
-    cpf: '74185296310',
+    cpf: '86641103366',
     whatsapp: '31988120004',
     email: 'gustavo.vieira@horizonte.com',
     ativo: false,
@@ -204,7 +204,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     id: 'emp-011',
     companyId: 'demo-company-2',
     nome: 'Isabela Moraes',
-    cpf: '85296374105',
+    cpf: '80785001654',
     whatsapp: '31988120005',
     email: 'isabela.moraes@horizonte.com',
     ativo: true,
@@ -218,7 +218,7 @@ export const DEMO_EMPLOYEES: DemoEmployee[] = [
     id: 'emp-012',
     companyId: 'demo-company-2',
     nome: 'Leandro Gomes',
-    cpf: '96374185201',
+    cpf: '22903666687',
     whatsapp: '31988120006',
     email: 'leandro.gomes@horizonte.com',
     ativo: true,
@@ -246,27 +246,13 @@ export function getDemoRoleFromCookieValue(value: string | null | undefined): Us
   return isUserRole(value) ? value : null
 }
 
-export function getDemoRoleFromCookieHeader(cookieHeader: string | null | undefined): UserRole | null {
-  if (!cookieHeader) {
-    return null
+export function getDemoCookieConfig() {
+  return {
+    name: DEMO_AUTH_COOKIE_NAME,
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 60 * 60 * 8,
   }
-
-  const chunks = cookieHeader.split(';')
-  for (const chunk of chunks) {
-    const [key, ...rest] = chunk.trim().split('=')
-    if (key === DEMO_AUTH_COOKIE_NAME) {
-      const rawValue = rest.join('=')
-      return getDemoRoleFromCookieValue(rawValue || null)
-    }
-  }
-
-  return null
-}
-
-export function buildDemoAuthCookie(role: UserRole): string {
-  return `${DEMO_AUTH_COOKIE_NAME}=${role}; path=/; max-age=86400; samesite=lax`
-}
-
-export function buildDemoLogoutCookie(): string {
-  return `${DEMO_AUTH_COOKIE_NAME}=; path=/; max-age=0; samesite=lax`
 }

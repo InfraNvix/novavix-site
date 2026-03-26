@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic'
 import { Suspense, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  buildDemoLogoutCookie,
   DEMO_ADMIN_AUTH,
   DEMO_COMPANIES,
   DEMO_EMPLOYEES,
@@ -81,9 +80,11 @@ function DemoAdminPanel() {
   const [onlyAtivos, setOnlyAtivos] = useState(true)
 
   const handleLogout = () => {
-    document.cookie = buildDemoLogoutCookie()
-    router.push('/login')
-    router.refresh()
+    void (async () => {
+      await fetch('/api/auth/demo-logout', { method: 'POST' })
+      router.push('/login')
+      router.refresh()
+    })()
   }
 
   const filteredRows = useMemo(() => {

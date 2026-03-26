@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
-import { timingSafeEqual } from 'node:crypto'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getClientIp } from '@/lib/security/http'
 import { checkRateLimit } from '@/lib/security/rate-limit'
+import { secureCompare } from '@/lib/security/crypto'
 import { parseSyncPayload } from '@/lib/validators/sync'
 
 type ApiErrorCode =
@@ -40,19 +40,10 @@ function errorResponse(
   return response
 }
 
-function secureCompare(left: string, right: string): boolean {
-  const leftBuffer = Buffer.from(left)
-  const rightBuffer = Buffer.from(right)
-  if (leftBuffer.length !== rightBuffer.length) {
-    return false
-  }
-  return timingSafeEqual(leftBuffer, rightBuffer)
-}
-
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const ip = getClientIp(request)
-    const rateLimit = checkRateLimit(`sync:${ip}`, { limit: 40, windowMs: 60_000 })
+    const rateLimit = await checkRateLimit(`sync:${ip}`, { limit: 40, windowMs: 60_000 })
     if (!rateLimit.allowed) {
       return errorResponse(
         429,

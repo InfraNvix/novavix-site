@@ -5,12 +5,10 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { UserRole } from '@/lib/auth/roles'
 import {
-  buildDemoLogoutCookie,
   DEMO_COMPANY_AUTH,
   DEMO_MODE_ENABLED,
   getDemoCompanyByCnpj,
   getDemoEmployeesByCompanyId,
-  getDemoRoleFromCookieHeader,
   type DemoEmployee,
 } from '@/lib/auth/demo'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
@@ -97,17 +95,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (DEMO_MODE_ENABLED) {
-      const demoRole = getDemoRoleFromCookieHeader(document.cookie)
-      if (!demoRole) {
-        router.push('/login')
-        return
-      }
-
-      if (demoRole === 'admin') {
-        router.push('/admin')
-        return
-      }
-
       const company = getDemoCompanyByCnpj(DEMO_COMPANY_AUTH.cnpj)
       if (!company) {
         router.push('/login')
@@ -157,7 +144,7 @@ export default function DashboardPage() {
 
   const handleSignOut = async () => {
     if (DEMO_MODE_ENABLED) {
-      document.cookie = buildDemoLogoutCookie()
+      await fetch('/api/auth/demo-logout', { method: 'POST' })
       router.push('/login')
       router.refresh()
       return
@@ -279,6 +266,12 @@ export default function DashboardPage() {
           <p className="text-slate-500 mt-3 font-medium text-sm">
             Saude ocupacional com foco em confirmacao WhatsApp e uso de token de acesso.
           </p>
+          <button
+            onClick={() => router.push('/dashboard/copsoq')}
+            className="mt-4 text-[11px] font-black uppercase tracking-widest text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-lg border border-blue-200"
+          >
+            Ver COPSOQ Coletivo
+          </button>
         </header>
 
         <section className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">

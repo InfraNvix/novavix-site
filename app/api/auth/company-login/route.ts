@@ -42,7 +42,7 @@ function errorResponse(
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const ip = getClientIp(request)
-    const rateLimit = checkRateLimit(`company-login:${ip}`, { limit: 8, windowMs: 60_000 })
+    const rateLimit = await checkRateLimit(`company-login:${ip}`, { limit: 8, windowMs: 60_000 })
     if (!rateLimit.allowed) {
       return errorResponse(
         429,

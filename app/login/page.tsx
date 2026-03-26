@@ -4,13 +4,8 @@ import { useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { isDemoCnpj, normalizeCnpj } from '@/lib/auth/cnpj'
-import {
-  buildDemoAuthCookie,
-  DEMO_ADMIN_AUTH,
-  DEMO_COMPANY_AUTH,
-  DEMO_MODE_ENABLED,
-} from '@/lib/auth/demo'
+import { normalizeCnpj } from '@/lib/auth/cnpj'
+import { DEMO_MODE_ENABLED } from '@/lib/auth/demo'
 import { validateStrongPassword } from '@/lib/auth/password-policy'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
@@ -47,32 +42,44 @@ export default function LoginPage() {
 
     if (DEMO_MODE_ENABLED) {
       if (mode === 'admin') {
-        const emailMatches = adminEmail.trim().toLowerCase() === DEMO_ADMIN_AUTH.email
-        const passwordMatches = password === DEMO_ADMIN_AUTH.password
+        const response = await fetch('/api/auth/demo-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'admin',
+            email: adminEmail,
+            password,
+          }),
+        })
 
-        if (!emailMatches || !passwordMatches) {
-          setError(`Modo demo admin: use ${DEMO_ADMIN_AUTH.email} e ${DEMO_ADMIN_AUTH.password}.`)
+        if (!response.ok) {
+          setError('Credenciais demo invalidas.')
           setLoading(false)
           return
         }
 
-        document.cookie = buildDemoAuthCookie('admin')
         router.push('/admin')
         router.refresh()
         return
       }
 
       const normalizedCnpj = normalizeCnpj(cnpj)
-      const cnpjMatches = isDemoCnpj(normalizedCnpj)
-      const passwordMatches = password === DEMO_COMPANY_AUTH.password
+      const response = await fetch('/api/auth/demo-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'empresa',
+          cnpj: normalizedCnpj,
+          password,
+        }),
+      })
 
-      if (!cnpjMatches || !passwordMatches) {
-        setError(`Modo demo empresa: use CNPJ ${DEMO_COMPANY_AUTH.cnpj} e senha ${DEMO_COMPANY_AUTH.password}.`)
+      if (!response.ok) {
+        setError('Credenciais demo invalidas.')
         setLoading(false)
         return
       }
 
-      document.cookie = buildDemoAuthCookie('empresa')
       router.push('/dashboard')
       router.refresh()
       return
@@ -264,13 +271,6 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-            {DEMO_MODE_ENABLED ? (
-              <p className="text-[10px] text-slate-500 font-bold leading-relaxed mb-4">
-                Empresa demo: CNPJ {DEMO_COMPANY_AUTH.cnpj} / senha {DEMO_COMPANY_AUTH.password}
-                <br />
-                Admin demo: {DEMO_ADMIN_AUTH.email} / senha {DEMO_ADMIN_AUTH.password}
-              </p>
-            ) : null}
             <p className="text-[11px] text-slate-400 font-medium">
               Duvidas com seu acesso?
               <br />

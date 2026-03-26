@@ -1,33 +1,33 @@
 export default {
   name: 'landingPage',
-  title: 'Página Inicial',
+  title: 'Pagina Inicial',
   type: 'document',
   fields: [
     {
       name: 'tituloHero',
-      title: 'Título Principal',
+      title: 'Titulo Principal',
       type: 'string',
-      description: 'Ex: Segurança do Trabalho Digital e Eficiente'
+      description: 'Ex: Seguranca do Trabalho Digital e Eficiente',
     },
     {
       name: 'subtituloHero',
-      title: 'Subtítulo/Descrição',
+      title: 'Subtitulo/Descricao',
       type: 'text',
-      description: 'O texto que explica sua atuação nacional.'
+      description: 'Texto de apoio da pagina inicial.',
     },
     {
       name: 'servicos',
-      title: 'Nossos Serviços',
+      title: 'Nossos Servicos',
       type: 'array',
       of: [
         {
           type: 'object',
           fields: [
-            { name: 'titulo', title: 'Título do Serviço', type: 'string' },
-            { name: 'descricao', title: 'Descrição do Serviço', type: 'text' }
-          ]
-        }
-      ]
-    }
-  ]
+            { name: 'titulo', title: 'Titulo do Servico', type: 'string' },
+            { name: 'descricao', title: 'Descricao do Servico', type: 'text' },
+          ],
+        },
+      ],
+    },
+  ],
 }
