@@ -21,6 +21,7 @@
     "react-dom": "^18.2.0",
     "react-is": ">=18.2.0 <20",
     "sanity": "^3.30.0",
+    "styled-components": "^6.3.12",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
