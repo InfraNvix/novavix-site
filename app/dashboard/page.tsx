@@ -266,12 +266,20 @@ export default function DashboardPage() {
           <p className="text-slate-500 mt-3 font-medium text-sm">
             Saude ocupacional com foco em confirmacao WhatsApp e uso de token de acesso.
           </p>
-          <button
-            onClick={() => router.push('/dashboard/copsoq')}
-            className="mt-4 text-[11px] font-black uppercase tracking-widest text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-lg border border-blue-200"
-          >
-            Ver COPSOQ Coletivo
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => router.push('/dashboard/copsoq')}
+              className="text-[11px] font-black uppercase tracking-widest text-blue-700 hover:bg-blue-50 px-3 py-2 rounded-lg border border-blue-200"
+            >
+              Ver COPSOQ Coletivo
+            </button>
+            <button
+              onClick={() => router.push('/dashboard/analytics')}
+              className="text-[11px] font-black uppercase tracking-widest text-cyan-700 hover:bg-cyan-50 px-3 py-2 rounded-lg border border-cyan-200"
+            >
+              Ver Analytics BI
+            </button>
+          </div>
         </header>
 
         <section className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">

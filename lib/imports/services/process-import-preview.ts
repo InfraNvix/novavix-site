@@ -1,7 +1,7 @@
 import type { ImportEntityType, ImportPreviewResponse } from '@/lib/imports/types'
 import { getImportLayoutProfile } from '@/lib/imports/layouts'
 import { parseImportBuffer } from '@/lib/imports/parsers'
-import { createImportPreviewJob } from '@/lib/imports/repositories/import-job-repository'
+import { createImportPreviewJob, updateImportJobPreviewPayload } from '@/lib/imports/repositories/import-job-repository'
 
 type ProcessImportPreviewInput = {
   entityType: ImportEntityType
@@ -17,6 +17,37 @@ type ProcessImportPreviewInput = {
   fileBuffer: Buffer
 }
 
+function normalizeToken(value: string): string {
+  return value.trim().toLowerCase().replace(/[\s_-]+/g, '')
+}
+
+function detectSuggestedMapping(
+  columns: string[],
+  explicitMapping: Record<string, string> | null | undefined,
+  layout: ReturnType<typeof getImportLayoutProfile>
+): Record<string, string> {
+  const mapping: Record<string, string> = { ...(explicitMapping ?? {}) }
+  const columnsByNormalized = new Map<string, string>()
+
+  for (const column of columns) {
+    columnsByNormalized.set(normalizeToken(column), column)
+  }
+
+  for (const field of layout.fields) {
+    if (mapping[field.key]) {
+      continue
+    }
+
+    const candidates = [field.key, ...(field.aliases ?? [])].map((value) => normalizeToken(value))
+    const matched = candidates.find((candidate) => columnsByNormalized.has(candidate))
+    if (matched) {
+      mapping[field.key] = columnsByNormalized.get(matched) as string
+    }
+  }
+
+  return mapping
+}
+
 export async function processImportPreview(input: ProcessImportPreviewInput): Promise<ImportPreviewResponse> {
   if (input.entityType !== 'collaborators') {
     throw new Error('IMPORT_ENTITY_NOT_ENABLED')
@@ -27,6 +58,32 @@ export async function processImportPreview(input: ProcessImportPreviewInput): Pr
     delimiter: input.delimiter ?? null,
     sheetName: input.sheetName ?? null,
   })
+
+  const suggestedMapping = detectSuggestedMapping(table.columns, input.mapping, layout)
+  const requiredFields = layout.fields.filter((item) => item.required)
+  const missingRequiredFields = requiredFields.filter((field) => {
+    const mappedColumn = suggestedMapping[field.key]
+    return !mappedColumn || !table.columns.includes(mappedColumn)
+  })
+
+  const requiredIssues = missingRequiredFields.map((field) => ({
+    rowNumber: 0,
+    columnKey: field.key,
+    code: 'IMPORT_REQUIRED_FIELD_UNMAPPED',
+    message: `Campo obrigatorio sem mapeamento: ${field.label}.`,
+  }))
+
+  const invalidRows = missingRequiredFields.length > 0 ? table.rows.length : 0
+  const validRows = missingRequiredFields.length > 0 ? 0 : table.rows.length
+  const issues = [
+    ...table.meta.warnings.map((warning) => ({
+      rowNumber: 0,
+      columnKey: null,
+      code: 'IMPORT_PARSE_WARNING',
+      message: warning,
+    })),
+    ...requiredIssues,
+  ]
 
   const job = await createImportPreviewJob({
     entityType: input.entityType,
@@ -39,7 +96,21 @@ export async function processImportPreview(input: ProcessImportPreviewInput): Pr
     layoutKey: layout.key,
     delimiter: input.delimiter ?? null,
     sheetName: input.sheetName ?? null,
-    mapping: input.mapping ?? null,
+    mapping: suggestedMapping,
+  })
+
+  await updateImportJobPreviewPayload({
+    importJobId: job.id,
+    mapping: suggestedMapping,
+    table,
+    summary: {
+      totalRows: table.rows.length,
+      validRows,
+      invalidRows,
+      duplicateInFile: 0,
+      duplicateInDatabase: 0,
+    },
+    issues,
   })
 
   return {
@@ -49,21 +120,16 @@ export async function processImportPreview(input: ProcessImportPreviewInput): Pr
     status: job.status,
     layoutKey: layout.key,
     detectedColumns: table.columns,
-    suggestedMapping: input.mapping ?? {},
+    suggestedMapping,
     previewRows: table.rows.slice(0, 20),
     validationSummary: {
       totalRows: table.rows.length,
-      validRows: table.rows.length,
-      invalidRows: 0,
+      validRows,
+      invalidRows,
       duplicateInFile: 0,
       duplicateInDatabase: 0,
     },
-    issues: table.meta.warnings.map((warning) => ({
-      rowNumber: 0,
-      columnKey: null,
-      code: 'IMPORT_PARSE_WARNING',
-      message: warning,
-    })),
+    issues,
   }
 }
 

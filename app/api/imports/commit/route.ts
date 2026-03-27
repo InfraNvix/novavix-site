@@ -119,6 +119,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const result = await processImportCommit({
       importJobId: parsed.data.importJobId,
       mapping: parsed.data.mapping,
+      conflictStrategy: parsed.data.conflictStrategy,
     })
 
     await writeImportAuditEvent({
@@ -141,6 +142,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ ok: true, data: result }, { status: 200 })
   } catch (error) {
     const code = error instanceof Error ? error.message : 'IMPORT_COMMIT_INTERNAL_ERROR'
+    if (code === 'IMPORT_PREVIEW_DATA_MISSING' || code === 'IMPORT_REQUIRED_FIELD_UNMAPPED') {
+      return errorResponse(422, 'DOMAIN_ERROR', 'Dados de preview incompletos para commit.', [code])
+    }
+    if (code === 'IMPORT_JOB_NOT_FOUND') {
+      return errorResponse(404, 'DOMAIN_ERROR', 'Job de importacao nao encontrado.', [code])
+    }
+
     await writeImportAuditEvent({
       eventName: 'imports.commit',
       eventStatus: 'failure',

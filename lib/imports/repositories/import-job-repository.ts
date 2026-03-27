@@ -1,5 +1,13 @@
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
-import type { ImportActorMode, ImportCommitResponse, ImportEntityType, ImportJobStatus } from '@/lib/imports/types'
+import type {
+  ImportActorMode,
+  ImportColumnMapping,
+  ImportCommitResponse,
+  ImportEntityType,
+  ImportJobStatus,
+  ImportTableData,
+  ImportValidationIssue,
+} from '@/lib/imports/types'
 
 type CreateImportPreviewJobInput = {
   entityType: ImportEntityType
@@ -55,7 +63,16 @@ export async function createImportPreviewJob(input: CreateImportPreviewJobInput)
 
 type CommitJobInput = {
   importJobId: string
-  mapping?: Record<string, string> | null
+  mapping?: ImportColumnMapping | null
+  summary: {
+    totalRows: number
+    validRows: number
+    invalidRows: number
+    importedRows: number
+    ignoredRows: number
+  }
+  issuesSample: ImportValidationIssue[]
+  status?: ImportJobStatus
 }
 
 export async function markImportJobAsCommitted(input: CommitJobInput): Promise<ImportCommitResponse> {
@@ -65,16 +82,19 @@ export async function markImportJobAsCommitted(input: CommitJobInput): Promise<I
   const { data, error } = await supabase
     .from('import_jobs')
     .update({
-      status: 'committed',
+      status: input.status ?? 'committed',
       committed_at: nowIso,
       mapping: input.mapping ?? null,
       commit_summary: {
-        totalRows: 0,
-        validRows: 0,
-        invalidRows: 0,
-        importedRows: 0,
-        ignoredRows: 0,
+        ...input.summary,
+        issuesSample: input.issuesSample,
       },
+      total_rows: input.summary.totalRows,
+      valid_rows: input.summary.validRows,
+      invalid_rows: input.summary.invalidRows,
+      imported_rows: input.summary.importedRows,
+      ignored_rows: input.summary.ignoredRows,
+      error_count: input.summary.invalidRows,
       updated_at: nowIso,
     })
     .eq('id', input.importJobId)
@@ -88,14 +108,8 @@ export async function markImportJobAsCommitted(input: CommitJobInput): Promise<I
   return {
     importJobId: data.id as string,
     status: data.status as ImportJobStatus,
-    summary: {
-      totalRows: 0,
-      validRows: 0,
-      invalidRows: 0,
-      importedRows: 0,
-      ignoredRows: 0,
-    },
-    issuesSample: [],
+    summary: input.summary,
+    issuesSample: input.issuesSample,
   }
 }
 
@@ -116,6 +130,78 @@ export async function getImportJobById(importJobId: string): Promise<{ id: strin
     id: data.id as string,
     companyId: data.company_id as string,
     entityType: data.entity_type as ImportEntityType,
+  }
+}
+
+type UpdatePreviewPayloadInput = {
+  importJobId: string
+  mapping: ImportColumnMapping
+  table: ImportTableData
+  summary: {
+    totalRows: number
+    validRows: number
+    invalidRows: number
+    duplicateInFile: number
+    duplicateInDatabase: number
+  }
+  issues: ImportValidationIssue[]
+}
+
+export async function updateImportJobPreviewPayload(input: UpdatePreviewPayloadInput): Promise<void> {
+  const supabase = getSupabaseAdminClient()
+  const nowIso = new Date().toISOString()
+
+  const { error } = await supabase
+    .from('import_jobs')
+    .update({
+      mapping: input.mapping,
+      validation_summary: {
+        summary: input.summary,
+        issues: input.issues,
+        table: input.table,
+      },
+      total_rows: input.summary.totalRows,
+      valid_rows: input.summary.validRows,
+      invalid_rows: input.summary.invalidRows,
+      error_count: input.summary.invalidRows,
+      updated_at: nowIso,
+    })
+    .eq('id', input.importJobId)
+
+  if (error) {
+    throw new Error('IMPORT_PREVIEW_JOB_UPDATE_FAILED')
+  }
+}
+
+export type ImportJobCommitPayload = {
+  id: string
+  companyId: string
+  entityType: ImportEntityType
+  mapping: ImportColumnMapping | null
+  validationSummary: {
+    table: ImportTableData
+  } | null
+}
+
+export async function getImportJobCommitPayload(importJobId: string): Promise<ImportJobCommitPayload | null> {
+  const supabase = getSupabaseAdminClient()
+
+  const { data, error } = await supabase
+    .from('import_jobs')
+    .select('id, company_id, entity_type, mapping, validation_summary')
+    .eq('id', importJobId)
+    .maybeSingle()
+
+  if (error || !data) {
+    return null
+  }
+
+  return {
+    id: data.id as string,
+    companyId: data.company_id as string,
+    entityType: data.entity_type as ImportEntityType,
+    mapping: (data.mapping as ImportColumnMapping | null) ?? null,
+    validationSummary: (data.validation_summary as { table: ImportTableData } | null) ?? null,
   }
 }
 
