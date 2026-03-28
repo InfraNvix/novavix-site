@@ -2,7 +2,7 @@ export type AnalyticsGrain = 'day' | 'week' | 'month'
 export type AnalyticsDistributionGroupBy = 'setor' | 'ghe' | 'empresa'
 
 export type AnalyticsScopeInput = {
-  companyId: string
+  companyId: string | null
   periodStart: string
   periodEnd: string
   setorNome: string | null
@@ -77,6 +77,7 @@ export type AnalyticsDrilldownOutput = {
     total: number
   }
   rows: Array<{
+    companyId: string
     sessionId: string
     submittedAt: string
     periodRef: string | null

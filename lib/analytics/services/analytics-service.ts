@@ -282,6 +282,7 @@ export async function getAnalyticsDrilldown(input: {
       total,
     },
     rows: rows.map((row) => ({
+      companyId: row.company_id,
       sessionId: row.session_id,
       submittedAt: row.submitted_at,
       periodRef: row.period_ref,

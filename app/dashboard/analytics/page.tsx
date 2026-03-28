@@ -314,7 +314,7 @@ export default async function DashboardAnalyticsPage({
 
   const companyId = profile.company_id ?? (isTechnical && queryCompanyId ? queryCompanyId : null)
 
-  if (!companyId) {
+  if (!companyId && !isTechnical) {
     return (
       <main className="min-h-screen bg-slate-50 p-6 md:p-10">
         <section className="max-w-5xl mx-auto bg-white border border-amber-200 rounded-2xl p-6">
@@ -353,12 +353,15 @@ export default async function DashboardAnalyticsPage({
           <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-300 font-black">Analytics Copsoq</p>
           <h1 className="text-2xl md:text-3xl font-black mt-2">Painel Completo de Analise</h1>
           <p className="text-sm text-slate-300 mt-2">Periodo: {periodStart} ate {periodEnd}</p>
+          <p className="text-sm text-cyan-300 mt-1">
+            Escopo atual: {companyId ? `Empresa ${companyId}` : 'Todas as empresas (admin)'}
+          </p>
           <form method="GET" className="mt-4 grid md:grid-cols-5 gap-3">
             {isTechnical ? (
               <input
                 name="companyId"
-                defaultValue={companyId}
-                placeholder="companyId"
+                defaultValue={companyId ?? ''}
+                placeholder="companyId (vazio = todas)"
                 className="px-3 py-2 rounded-xl bg-[#0b1220] border border-slate-700 text-sm"
               />
             ) : null}
@@ -525,6 +528,7 @@ export default async function DashboardAnalyticsPage({
               <table className="w-full min-w-[1060px] text-sm">
                 <thead className="bg-[#0b1220] text-slate-400 uppercase text-[10px] tracking-widest">
                   <tr>
+                    <th className="text-left px-4 py-3">Empresa</th>
                     <th className="text-left px-4 py-3">Data</th>
                     <th className="text-left px-4 py-3">Colaborador</th>
                     <th className="text-left px-4 py-3">Setor</th>
@@ -537,6 +541,7 @@ export default async function DashboardAnalyticsPage({
                 <tbody>
                   {drilldown.rows.map((row) => (
                     <tr key={`${row.sessionId}-${row.dimensionCode}`} className="border-t border-slate-900">
+                      <td className="px-4 py-3 text-slate-300">{row.companyId}</td>
                       <td className="px-4 py-3 text-slate-300">{row.submittedAt.slice(0, 10)}</td>
                       <td className="px-4 py-3">{row.collaboratorName ?? '-'}</td>
                       <td className="px-4 py-3">{row.setorNome ?? '-'}</td>

@@ -25,7 +25,7 @@ function applyScopeFilter<T extends { eq: Function; gte: Function; lte: Function
 ): T {
   let next = query
 
-  if (opts?.includeCompany !== false) {
+  if (opts?.includeCompany !== false && scope.companyId) {
     next = next.eq('company_id', scope.companyId)
   }
 
