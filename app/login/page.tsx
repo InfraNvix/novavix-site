@@ -132,7 +132,7 @@ export default function LoginPage() {
         return
       }
 
-      router.push('/admin')
+      router.push(DEMO_MODE_ENABLED ? '/admin' : '/dashboard/analytics')
       router.refresh()
       return
     }

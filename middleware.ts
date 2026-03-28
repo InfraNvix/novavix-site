@@ -107,6 +107,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return withSessionCookies(response, NextResponse.redirect(target))
   }
 
+  if (user && isAdminRoute(pathname) && role === 'admin' && !DEMO_MODE_ENABLED) {
+    const target = request.nextUrl.clone()
+    target.pathname = '/dashboard/analytics'
+    target.search = ''
+    return withSessionCookies(response, NextResponse.redirect(target))
+  }
+
   if (user && isClinicRoute(pathname) && role !== 'clinica' && role !== 'admin') {
     const target = request.nextUrl.clone()
     target.pathname = DEFAULT_AUTH_REDIRECT
@@ -116,14 +123,21 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   if (user && isCompanyRoute(pathname) && (role === 'admin' || role === 'clinica')) {
     const adminUrl = request.nextUrl.clone()
-    adminUrl.pathname = role === 'clinica' ? '/clinic' : '/admin'
+    adminUrl.pathname = role === 'clinica' ? '/clinic' : DEMO_MODE_ENABLED ? '/admin' : '/dashboard/analytics'
     adminUrl.search = ''
     return withSessionCookies(response, NextResponse.redirect(adminUrl))
   }
 
   if (isAuthPage(pathname) && user) {
     const dashboardUrl = request.nextUrl.clone()
-    dashboardUrl.pathname = role === 'admin' ? '/admin' : role === 'clinica' ? '/clinic' : DEFAULT_AUTH_REDIRECT
+    dashboardUrl.pathname =
+      role === 'admin'
+        ? DEMO_MODE_ENABLED
+          ? '/admin'
+          : '/dashboard/analytics'
+        : role === 'clinica'
+        ? '/clinic'
+        : DEFAULT_AUTH_REDIRECT
     dashboardUrl.search = ''
     return withSessionCookies(response, NextResponse.redirect(dashboardUrl))
   }
