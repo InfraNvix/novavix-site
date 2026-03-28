@@ -1,5 +1,12 @@
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { secureCompare } from '@/lib/security/crypto'
+import {
+  DEMO_AUTH_COOKIE_NAME,
+  DEMO_COMPANY_AUTH,
+  DEMO_MODE_ENABLED,
+  getDemoCompanyByCnpj,
+  getDemoRoleFromCookieValue,
+} from '@/lib/auth/demo'
 
 type CopsoqUserProfile = {
   user_id: string
@@ -44,7 +51,7 @@ function getTechnicalEmails(): Set<string> {
 }
 
 function isTechnicalProfile(role: string, loginEmail: string): boolean {
-  if (role === 'admin' || role === 'tecnico') {
+  if (role === 'admin' || role === 'tecnico' || role === 'clinica') {
     return true
   }
 
@@ -53,6 +60,66 @@ function isTechnicalProfile(role: string, loginEmail: string): boolean {
 }
 
 export async function resolveCopsoqAccessContext(request: Request): Promise<CopsoqAccessContext | null> {
+  if (DEMO_MODE_ENABLED) {
+    const cookieHeader = request.headers.get('cookie') ?? ''
+    const cookieMap = new Map<string, string>(
+      cookieHeader
+        .split(';')
+        .map((chunk) => chunk.trim())
+        .filter((chunk) => chunk.length > 0 && chunk.includes('='))
+        .map((chunk) => {
+          const idx = chunk.indexOf('=')
+          return [chunk.slice(0, idx), decodeURIComponent(chunk.slice(idx + 1))]
+        })
+    )
+    const demoRole = getDemoRoleFromCookieValue(cookieMap.get(DEMO_AUTH_COOKIE_NAME))
+
+    if (demoRole) {
+      const demoCompany = getDemoCompanyByCnpj(DEMO_COMPANY_AUTH.cnpj)
+      if (demoRole === 'empresa') {
+        return {
+          mode: 'user',
+          canReadIndividual: false,
+          canReadAggregate: true,
+          canRecomputeAggregate: false,
+          companyId: demoCompany?.id ?? null,
+          role: 'empresa',
+          isTechnical: false,
+          userId: 'demo-empresa',
+          loginEmail: DEMO_COMPANY_AUTH.email,
+        }
+      }
+
+      if (demoRole === 'admin') {
+        return {
+          mode: 'user',
+          canReadIndividual: true,
+          canReadAggregate: true,
+          canRecomputeAggregate: true,
+          companyId: null,
+          role: 'admin',
+          isTechnical: true,
+          userId: 'demo-admin',
+          loginEmail: 'admin.demo@novavix.local',
+        }
+      }
+
+      if (demoRole === 'clinica') {
+        return {
+          mode: 'user',
+          canReadIndividual: true,
+          canReadAggregate: true,
+          canRecomputeAggregate: false,
+          companyId: null,
+          role: 'clinica',
+          isTechnical: true,
+          userId: 'demo-clinica',
+          loginEmail: 'clinica.demo@novavix.local',
+        }
+      }
+    }
+  }
+
   const expectedApiKey = process.env.NOVAVIX_COPSOQ_API_KEY
   const providedApiKey = request.headers.get('x-api-key')
 

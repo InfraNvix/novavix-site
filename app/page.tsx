@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ShieldCheck, Zap, BarChart3, ChevronRight, LayoutDashboard, Rss } from 'lucide-react'
 import { createClient } from 'next-sanity'
+import RecoveryHashRedirect from '@/app/_components/recovery-hash-redirect'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -61,6 +62,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
+      <RecoveryHashRedirect />
       <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <div className="relative w-[150px] h-[45px]">

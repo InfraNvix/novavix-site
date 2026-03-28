@@ -8,6 +8,7 @@ import {
   DEFAULT_AUTH_REDIRECT,
   isAdminRoute,
   isAuthPage,
+  isClinicRoute,
   isCompanyRoute,
   isProtectedRoute,
   isStaticAsset,
@@ -46,22 +47,29 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     }
 
     if (demoRole && isAdminRoute(pathname) && demoRole !== 'admin') {
-      const companyUrl = request.nextUrl.clone()
-      companyUrl.pathname = DEFAULT_AUTH_REDIRECT
-      companyUrl.search = ''
-      return applySecurityHeaders(NextResponse.redirect(companyUrl))
+      const target = request.nextUrl.clone()
+      target.pathname = demoRole === 'clinica' ? '/clinic' : DEFAULT_AUTH_REDIRECT
+      target.search = ''
+      return applySecurityHeaders(NextResponse.redirect(target))
     }
 
-    if (demoRole && isCompanyRoute(pathname) && demoRole === 'admin') {
+    if (demoRole && isClinicRoute(pathname) && demoRole !== 'clinica' && demoRole !== 'admin') {
+      const target = request.nextUrl.clone()
+      target.pathname = DEFAULT_AUTH_REDIRECT
+      target.search = ''
+      return applySecurityHeaders(NextResponse.redirect(target))
+    }
+
+    if (demoRole && isCompanyRoute(pathname) && (demoRole === 'admin' || demoRole === 'clinica')) {
       const adminUrl = request.nextUrl.clone()
-      adminUrl.pathname = '/admin'
+      adminUrl.pathname = demoRole === 'clinica' ? '/clinic' : '/admin'
       adminUrl.search = ''
       return applySecurityHeaders(NextResponse.redirect(adminUrl))
     }
 
     if (isAuthPage(pathname) && demoRole) {
       const dashboardUrl = request.nextUrl.clone()
-      dashboardUrl.pathname = demoRole === 'admin' ? '/admin' : DEFAULT_AUTH_REDIRECT
+      dashboardUrl.pathname = demoRole === 'admin' ? '/admin' : demoRole === 'clinica' ? '/clinic' : DEFAULT_AUTH_REDIRECT
       dashboardUrl.search = ''
       return applySecurityHeaders(NextResponse.redirect(dashboardUrl))
     }
@@ -93,22 +101,29 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   if (user && isAdminRoute(pathname) && role !== 'admin') {
-    const companyUrl = request.nextUrl.clone()
-    companyUrl.pathname = DEFAULT_AUTH_REDIRECT
-    companyUrl.search = ''
-    return withSessionCookies(response, NextResponse.redirect(companyUrl))
+    const target = request.nextUrl.clone()
+    target.pathname = role === 'clinica' ? '/clinic' : DEFAULT_AUTH_REDIRECT
+    target.search = ''
+    return withSessionCookies(response, NextResponse.redirect(target))
   }
 
-  if (user && isCompanyRoute(pathname) && role === 'admin') {
+  if (user && isClinicRoute(pathname) && role !== 'clinica' && role !== 'admin') {
+    const target = request.nextUrl.clone()
+    target.pathname = DEFAULT_AUTH_REDIRECT
+    target.search = ''
+    return withSessionCookies(response, NextResponse.redirect(target))
+  }
+
+  if (user && isCompanyRoute(pathname) && (role === 'admin' || role === 'clinica')) {
     const adminUrl = request.nextUrl.clone()
-    adminUrl.pathname = '/admin'
+    adminUrl.pathname = role === 'clinica' ? '/clinic' : '/admin'
     adminUrl.search = ''
     return withSessionCookies(response, NextResponse.redirect(adminUrl))
   }
 
   if (isAuthPage(pathname) && user) {
     const dashboardUrl = request.nextUrl.clone()
-    dashboardUrl.pathname = role === 'admin' ? '/admin' : DEFAULT_AUTH_REDIRECT
+    dashboardUrl.pathname = role === 'admin' ? '/admin' : role === 'clinica' ? '/clinic' : DEFAULT_AUTH_REDIRECT
     dashboardUrl.search = ''
     return withSessionCookies(response, NextResponse.redirect(dashboardUrl))
   }
@@ -117,5 +132,5 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ['/login', '/dashboard/:path*', '/portal/:path*', '/admin/:path*'],
+  matcher: ['/login', '/dashboard/:path*', '/portal/:path*', '/admin/:path*', '/clinic/:path*'],
 }

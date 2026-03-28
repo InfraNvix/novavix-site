@@ -1,5 +1,6 @@
 const COMPANY_PREFIXES = ['/dashboard', '/portal']
 const ADMIN_PREFIXES = ['/admin']
+const CLINIC_PREFIXES = ['/clinic']
 const AUTH_PAGES = ['/login']
 const STATIC_PREFIXES = ['/_next', '/favicon.ico', '/robots.txt', '/sitemap.xml']
 
@@ -10,7 +11,7 @@ export function isStaticAsset(pathname: string): boolean {
 }
 
 export function isProtectedRoute(pathname: string): boolean {
-  return [...COMPANY_PREFIXES, ...ADMIN_PREFIXES].some(
+  return [...COMPANY_PREFIXES, ...ADMIN_PREFIXES, ...CLINIC_PREFIXES].some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   )
 }
@@ -21,6 +22,10 @@ export function isCompanyRoute(pathname: string): boolean {
 
 export function isAdminRoute(pathname: string): boolean {
   return ADMIN_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+}
+
+export function isClinicRoute(pathname: string): boolean {
+  return CLINIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 }
 
 export function isAuthPage(pathname: string): boolean {

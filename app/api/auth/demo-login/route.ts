@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import {
   DEMO_ADMIN_AUTH,
+  DEMO_CLINIC_AUTH,
   DEMO_COMPANY_AUTH,
   DEMO_MODE_ENABLED,
   getDemoCookieConfig,
@@ -11,7 +12,7 @@ import { checkRateLimit } from '@/lib/security/rate-limit'
 import type { UserRole } from '@/lib/auth/roles'
 
 type DemoLoginPayload = {
-  mode?: 'empresa' | 'admin'
+  mode?: 'empresa' | 'admin' | 'clinica'
   cnpj?: string
   email?: string
   password?: string
@@ -91,6 +92,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     const emailMatches = (payload.email ?? '').trim().toLowerCase() === DEMO_ADMIN_AUTH.email
     const passwordMatches = payload.password === DEMO_ADMIN_AUTH.password
     return emailMatches && passwordMatches ? setDemoCookie('admin') : unauthorized()
+  }
+
+  if (payload.mode === 'clinica') {
+    const emailMatches = (payload.email ?? '').trim().toLowerCase() === DEMO_CLINIC_AUTH.email
+    const passwordMatches = payload.password === DEMO_CLINIC_AUTH.password
+    return emailMatches && passwordMatches ? setDemoCookie('clinica') : unauthorized()
   }
 
   if (payload.mode === 'empresa') {

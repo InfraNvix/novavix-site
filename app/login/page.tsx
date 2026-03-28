@@ -10,9 +10,10 @@ import { validateStrongPassword } from '@/lib/auth/password-policy'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<'empresa' | 'admin'>('empresa')
+  const [mode, setMode] = useState<'empresa' | 'admin' | 'clinica'>('empresa')
   const [cnpj, setCnpj] = useState('')
   const [adminEmail, setAdminEmail] = useState('')
+  const [clinicEmail, setClinicEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -59,6 +60,28 @@ export default function LoginPage() {
         }
 
         router.push('/admin')
+        router.refresh()
+        return
+      }
+
+      if (mode === 'clinica') {
+        const response = await fetch('/api/auth/demo-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'clinica',
+            email: clinicEmail,
+            password,
+          }),
+        })
+
+        if (!response.ok) {
+          setError('Credenciais demo invalidas.')
+          setLoading(false)
+          return
+        }
+
+        router.push('/clinic')
         router.refresh()
         return
       }
@@ -110,6 +133,29 @@ export default function LoginPage() {
       }
 
       router.push('/admin')
+      router.refresh()
+      return
+    }
+
+    if (mode === 'clinica') {
+      if (!clinicEmail) {
+        setError('Informe o e-mail da clinica.')
+        setLoading(false)
+        return
+      }
+
+      const { error: clinicSignInError } = await supabase.auth.signInWithPassword({
+        email: clinicEmail,
+        password,
+      })
+
+      if (clinicSignInError) {
+        setError('Credenciais invalidas.')
+        setLoading(false)
+        return
+      }
+
+      router.push('/clinic')
       router.refresh()
       return
     }
@@ -166,7 +212,7 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      <div className="w-full max-w-[380px]">
+      <div className="w-full max-w-[420px]">
         <div className="flex justify-center mb-8">
           <div className="relative w-[180px] h-[50px]">
             <Image src="/logo-novavix.png" alt="Novavix" fill className="object-contain" priority />
@@ -182,14 +228,14 @@ export default function LoginPage() {
             ) : null}
           </div>
 
-          <div className="mb-4 flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+          <div className="mb-4 grid grid-cols-3 rounded-xl border border-slate-200 bg-slate-50 p-1 gap-1">
             <button
               type="button"
               onClick={() => {
                 setMode('empresa')
                 setError(null)
               }}
-              className={`flex-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${
+              className={`rounded-lg px-2 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
                 mode === 'empresa' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
               }`}
             >
@@ -201,11 +247,23 @@ export default function LoginPage() {
                 setMode('admin')
                 setError(null)
               }}
-              className={`flex-1 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-all ${
+              className={`rounded-lg px-2 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
                 mode === 'admin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
               }`}
             >
               Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('clinica')
+                setError(null)
+              }}
+              className={`rounded-lg px-2 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
+                mode === 'clinica' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              Clinica
             </button>
           </div>
 
@@ -230,7 +288,7 @@ export default function LoginPage() {
                   placeholder="00.000.000/0000-00"
                 />
               </div>
-            ) : (
+            ) : mode === 'admin' ? (
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">
                   E-mail Admin
@@ -242,6 +300,20 @@ export default function LoginPage() {
                   onChange={(event) => setAdminEmail(event.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-all"
                   placeholder="admin@novavix.com.br"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 ml-1">
+                  E-mail Clinica
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={clinicEmail}
+                  onChange={(event) => setClinicEmail(event.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                  placeholder="clinica@novavix.com.br"
                 />
               </div>
             )}

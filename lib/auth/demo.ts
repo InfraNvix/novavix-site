@@ -17,6 +17,12 @@ export const DEMO_ADMIN_AUTH = {
   displayName: 'Administrador Demo',
 }
 
+export const DEMO_CLINIC_AUTH = {
+  email: 'clinica.demo@novavix.local',
+  password: 'Demo@12345',
+  displayName: 'Clinica Demo',
+}
+
 export type DemoWhatsAppStatus = 'confirmado' | 'pendente' | 'falhou'
 
 export type DemoEmployee = {
