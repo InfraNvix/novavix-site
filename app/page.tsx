@@ -76,7 +76,7 @@ export default async function HomePage() {
               Blog
             </a>
             <Link
-              href="/login?forceLogin=1"
+              href="/access-restricted"
               className="bg-slate-900 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-slate-200 ml-4"
             >
               Acesso Restrito

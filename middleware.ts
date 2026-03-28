@@ -26,7 +26,6 @@ function withSessionCookies(source: NextResponse, target: NextResponse): NextRes
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname, search } = request.nextUrl
-  const forceLogin = request.nextUrl.searchParams.get('forceLogin') === '1'
 
   if (isStaticAsset(pathname)) {
     return applySecurityHeaders(NextResponse.next())
@@ -39,12 +38,6 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   if (DEMO_MODE_ENABLED) {
     const demoRole = getDemoRoleFromCookieValue(request.cookies.get(DEMO_AUTH_COOKIE_NAME)?.value)
-
-    if (isAuthPage(pathname) && forceLogin) {
-      const response = NextResponse.next()
-      response.cookies.delete(DEMO_AUTH_COOKIE_NAME)
-      return applySecurityHeaders(response)
-    }
 
     if (isProtectedRoute(pathname) && !demoRole) {
       const loginUrl = request.nextUrl.clone()
@@ -94,10 +87,6 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     loginUrl.pathname = '/login'
     loginUrl.searchParams.set('next', `${pathname}${search}`)
     return withSessionCookies(response, NextResponse.redirect(loginUrl))
-  }
-
-  if (isAuthPage(pathname) && forceLogin) {
-    return withSessionCookies(response, NextResponse.next())
   }
 
   let role: UserRole | null = null

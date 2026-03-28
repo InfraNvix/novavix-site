@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -19,34 +19,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
 
   const router = useRouter()
-  const supabase = useMemo(() => {
-    if (DEMO_MODE_ENABLED) {
-      return null
-    }
-    return getSupabaseBrowserClient()
-  }, [])
+  const getSupabase = () => (DEMO_MODE_ENABLED ? null : getSupabaseBrowserClient())
 
   const azulNovavix = '#1E3A5F'
-
-  useEffect(() => {
-    const forceLogin = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('forceLogin') === '1'
-    if (!forceLogin) {
-      return
-    }
-
-    if (DEMO_MODE_ENABLED) {
-      void (async () => {
-        await fetch('/api/auth/demo-logout', { method: 'POST' })
-      })()
-      return
-    }
-
-    if (!supabase) {
-      return
-    }
-
-    void supabase.auth.signOut()
-  }, [supabase])
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -128,6 +103,7 @@ export default function LoginPage() {
       return
     }
 
+    const supabase = getSupabase()
     if (!supabase) {
       setError('Cliente de autenticacao indisponivel.')
       setLoading(false)
