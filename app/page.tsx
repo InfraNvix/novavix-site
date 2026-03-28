@@ -49,7 +49,7 @@ async function getLandingData(): Promise<HomeData> {
     }
   }`
 
-  return client.fetch(query, {}, { cache: 'no-store', next: { revalidate: 0 } })
+  return client.fetch(query, {}, { cache: 'no-store' })
 }
 
 export default async function HomePage() {
@@ -76,7 +76,7 @@ export default async function HomePage() {
               Blog
             </a>
             <Link
-              href="/login"
+              href="/login?forceLogin=1"
               className="bg-slate-900 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-slate-200 ml-4"
             >
               Acesso Restrito

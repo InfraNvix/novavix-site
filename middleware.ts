@@ -26,6 +26,7 @@ function withSessionCookies(source: NextResponse, target: NextResponse): NextRes
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname, search } = request.nextUrl
+  const forceLogin = request.nextUrl.searchParams.get('forceLogin') === '1'
 
   if (isStaticAsset(pathname)) {
     return applySecurityHeaders(NextResponse.next())
@@ -38,6 +39,12 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   if (DEMO_MODE_ENABLED) {
     const demoRole = getDemoRoleFromCookieValue(request.cookies.get(DEMO_AUTH_COOKIE_NAME)?.value)
+
+    if (isAuthPage(pathname) && forceLogin) {
+      const response = NextResponse.next()
+      response.cookies.delete(DEMO_AUTH_COOKIE_NAME)
+      return applySecurityHeaders(response)
+    }
 
     if (isProtectedRoute(pathname) && !demoRole) {
       const loginUrl = request.nextUrl.clone()
@@ -89,6 +96,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return withSessionCookies(response, NextResponse.redirect(loginUrl))
   }
 
+  if (isAuthPage(pathname) && forceLogin) {
+    return withSessionCookies(response, NextResponse.next())
+  }
+
   let role: UserRole | null = null
   if (user) {
     const { data: profile } = await supabase
@@ -121,9 +132,16 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return withSessionCookies(response, NextResponse.redirect(target))
   }
 
-  if (user && isCompanyRoute(pathname) && (role === 'admin' || role === 'clinica')) {
+  if (user && isCompanyRoute(pathname) && role === 'clinica') {
     const adminUrl = request.nextUrl.clone()
-    adminUrl.pathname = role === 'clinica' ? '/clinic' : DEMO_MODE_ENABLED ? '/admin' : '/dashboard/analytics'
+    adminUrl.pathname = '/clinic'
+    adminUrl.search = ''
+    return withSessionCookies(response, NextResponse.redirect(adminUrl))
+  }
+
+  if (user && isCompanyRoute(pathname) && role === 'admin' && (pathname === '/dashboard' || pathname.startsWith('/portal'))) {
+    const adminUrl = request.nextUrl.clone()
+    adminUrl.pathname = '/dashboard/analytics'
     adminUrl.search = ''
     return withSessionCookies(response, NextResponse.redirect(adminUrl))
   }

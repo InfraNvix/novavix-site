@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -27,6 +27,26 @@ export default function LoginPage() {
   }, [])
 
   const azulNovavix = '#1E3A5F'
+
+  useEffect(() => {
+    const forceLogin = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('forceLogin') === '1'
+    if (!forceLogin) {
+      return
+    }
+
+    if (DEMO_MODE_ENABLED) {
+      void (async () => {
+        await fetch('/api/auth/demo-logout', { method: 'POST' })
+      })()
+      return
+    }
+
+    if (!supabase) {
+      return
+    }
+
+    void supabase.auth.signOut()
+  }, [supabase])
 
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
