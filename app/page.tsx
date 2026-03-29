@@ -1,17 +1,18 @@
-import Link from 'next/link'
-import Image from 'next/image'
-import { ShieldCheck, Zap, BarChart3, ChevronRight, LayoutDashboard, Rss } from 'lucide-react'
-import { createClient } from 'next-sanity'
+import Link from 'next/link';
+import Image from 'next/image';
+import { ShieldCheck, Zap, BarChart3, ChevronRight, LayoutDashboard, Rss } from 'lucide-react';
+import { createClient } from 'next-sanity';
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+// Força o Next.js a sempre buscar dados novos (evita cache de texto antigo)
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const client = createClient({
   projectId: '70qpcg23',
   dataset: 'production',
   apiVersion: '2024-03-19',
   useCdn: false,
-})
+});
 
 async function getLandingData() {
   const query = `{
@@ -27,21 +28,22 @@ async function getLandingData() {
       "imagemUrl": mainImage.asset->url,
       "resumoPost": body[0].children[0].text
     }
-  }`
+  }`;
   
-  return client.fetch(query, {}, { cache: 'no-store' })
+  return await client.fetch(query, {}, { cache: 'no-store' });
 }
 
 export default async function HomePage() {
-  const data = await getLandingData()
+  const data = await getLandingData();
   
-  const title = data?.landing?.tituloHero || 'Segurança do Trabalho Digital'
-  const subtitle = data?.landing?.subtituloHero || 'O NOVAVIX GO centraliza seus eventos de SST, PGR e PCMSO.'
-  const posts = data?.posts || []
+  const title = data?.landing?.tituloHero || 'Segurança do Trabalho Digital e Eficiente';
+  const subtitle = data?.landing?.subtituloHero || 'O NOVAVIX GO centraliza seus eventos de SST, PGR e PCMSO.';
+  const posts = data?.posts || [];
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
       
+      {/* NAVBAR: Mantém a logo original */}
       <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <div className="relative w-[150px] h-[45px]">
@@ -66,6 +68,7 @@ export default async function HomePage() {
         </div>
       </nav>
 
+      {/* HERO SECTION - NOVO LAYOUT DO QUADRO */}
       <section className="pt-40 pb-20 px-6">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
           <div>
@@ -86,29 +89,32 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="relative group">
-            <div className="rounded-[40px] aspect-video w-full overflow-hidden shadow-2xl border-[8px] border-white relative flex flex-col items-center justify-center p-12 bg-slate-900">
+          {/* QUADRO CORRIGIDO */}
+          <div className="relative group p-6 bg-slate-50 border border-slate-100 rounded-[40px] shadow-sm">
+            {/* CONTAINER DA IMAGEM: Agora como um card limpo */}
+            <div className="rounded-3xl aspect-video w-full overflow-hidden shadow-md relative bg-white flex items-center justify-center p-8 mb-8">
+              {/* IMAGEM: Tamanho adequado (object-contain) para não cortar e mostrar a logo inteira */}
               <Image 
                 src="/logo_nvixgo.png" 
-                alt="Novavix GO Background" 
+                alt="Novavix GO Gestão Ocupacional" 
                 fill 
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                className="object-contain group-hover:scale-105 transition-transform duration-500"
               />
-              <div className="relative z-10 flex flex-col items-center text-center bg-black/40 backdrop-blur-md p-6 rounded-3xl border border-white/10">
-                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white mb-4 border border-white/20">
-                  <LayoutDashboard size={28} />
-                </div>
-                <p className="text-white font-black uppercase tracking-[0.4em] text-[10px]">Novavix GO</p>
-                <div className="h-[1px] w-10 bg-white/30 my-3" />
-                <p className="text-white/90 font-bold text-[11px] uppercase tracking-wider max-w-xs leading-relaxed">
-                  Nosso principal produto é um sistema completo de gestão para empresas de Saúde, Segurança e Higiene Ocupacional.
-                </p>
-              </div>
+            </div>
+
+            {/* TEXTO: Movido para BAIXO do container da imagem e reestilizado para harmonia */}
+            <div className="text-center px-4">
+              <p className="text-slate-900 font-black uppercase tracking-[0.4em] text-[10px]">Novavix GO</p>
+              <div className="h-[2px] w-12 bg-blue-500 my-3 mx-auto" />
+              <p className="text-slate-500 font-medium text-[12px] leading-relaxed max-w-sm mx-auto">
+                Nosso principal produto, o NOVAVIX GO, é um sistema completo de gestão para empresas do setor de prestação de serviços do ramo de Saúde, Segurança e Higiene Ocupacional.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
+      {/* SEÇÃO SOLUÇÕES (MANTIDA IGUAL) */}
       <section id="solucoes" className="py-24 bg-slate-50/50 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16">
@@ -135,6 +141,7 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* BLOG (MANTIDA IGUAL) */}
       <section id="blog" className="py-24 bg-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16">
@@ -175,5 +182,5 @@ export default async function HomePage() {
         </p>
       </footer>
     </div>
-  )
+  );
 }
