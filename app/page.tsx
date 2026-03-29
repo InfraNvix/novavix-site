@@ -114,7 +114,10 @@ export default async function HomePage() {
                 <p className="text-white/60 font-black uppercase tracking-[0.4em] text-[10px]">Novavix GO</p>
                 <div className="h-[2px] w-12 bg-blue-500/40 my-3" />
                 <p className="text-white/20 font-medium text-[11px] italic mt-4 font-black uppercase tracking-widest">
-                  Interface de Gestao
+                  Oferecemos soluções completas, para acelerar o seu crescimento no mercado, totalmente aderente a sua empresa. Contamos com a expertise de vinte anos de atuação no mercado. 
+                  Entre os nossos diferenciais estão a constante atualização do sistema seguindo a legislação e o baixo custo de implantação através de licenciamento ilimitado por base de dados e não por vidas. 
+                  O seu negócio cresce e o preço que você paga permanece igual. De olho no futuro e na Experiência do Cliente, nossos clientes podem solicitar e antecipar melhorias no sistema importantes para o seu negócio.
+                  Tudo isso em uma interface completamente intuitiva e simples de manusear.
                 </p>
               </div>
             </div>
