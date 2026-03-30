@@ -140,7 +140,7 @@ export default function HomePage() {
             <div className="space-y-4">
               <div className="text-blue-600"><Zap size={32} strokeWidth={3} /></div>
               <h3 className="font-bold text-xl tracking-tight uppercase">Mensageria eSocial SST</h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Envio automatizado dos eventos <strong>S-2210, S-2220, S-2240 e S-2241</strong> para total conformidade.</p>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Envio automatizado dos eventos <strong> S-2220, S-2240 e S-2241</strong> para total conformidade.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><ShieldCheck size={32} strokeWidth={3} /></div>
@@ -150,7 +150,7 @@ export default function HomePage() {
             <div className="space-y-4">
               <div className="text-blue-600"><BarChart3 size={32} strokeWidth={3} /></div>
               <h3 className="font-bold text-xl tracking-tight uppercase">Gestão Ocupacional</h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Dashboards estratégicos em tempo real para controle total da saúde ocupacional.</p>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Indicadores estratégicos em tempo real para controle total da saúde ocupacional.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><FileText size={32} strokeWidth={3} /></div>
@@ -160,7 +160,7 @@ export default function HomePage() {
             <div className="space-y-4">
               <div className="text-blue-600"><DollarSign size={32} strokeWidth={3} /></div>
               <h3 className="font-bold text-xl tracking-tight uppercase">Faturamento Integrado</h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Integração automática entre o atendimento técnico e o faturamento de serviços.</p>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Integração automática entre os atendimentos e o faturamento de serviços.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><Eye size={32} strokeWidth={3} /></div>
