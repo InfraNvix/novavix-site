@@ -14,7 +14,7 @@ const SEO_CONTENT = {
 };
 
 // =================================================================
-// 2. BANCO DE DADOS LOCAL DO BLOG (Atualize aqui seus posts!)
+// 2. BANCO DE DADOS LOCAL DO BLOG
 // =================================================================
 const POSTS_LOCAIS = [
   {
@@ -22,7 +22,7 @@ const POSTS_LOCAIS = [
     tituloPost: 'Riscos Psicossociais NR1- MTE lança manual de orientação',
     slug: 'https://www.gov.br/trabalho-e-emprego/pt-br/noticias-e-conteudo/2026/marco/mte-lanca-manual-para-orientar-gestao-de-riscos-ocupacionais-nas-empresas',
     data: '30/03/2026',
-    imagemUrl: '/logo_psico.png/ Coloque esta foto na pasta /public
+    imagemUrl: '/logo_psico.png', 
     resumoPost: 'O MTE lançou no último dia 16/03/2026 o manual para orientar gestão de riscos ocupacionais nas empresas. Sua Empresa ainda tem dificuldades com o mapeamento dos riscos conforme nova NR1? O NOVAVIX GO tem a solução mais simples e eficaz para sua gestão!'
   },
   {
@@ -30,16 +30,15 @@ const POSTS_LOCAIS = [
     tituloPost: 'Fiscalização de Segurança e Saúde no Trabalho',
     slug: 'https://www.gov.br/trabalho-e-emprego/pt-br/assuntos/inspecao-do-trabalho/seguranca-e-saude-no-trabalho',
     data: '30/03/2026',
-    imagemUrl: '/logo_inspe.png/ Coloque esta foto na pasta /public
-    resumoPost: 'Nos dias atuais sua empresa não pode estar sujeita a processos demorados e burocráticos, pois irá perder competitividade e eficácia, além de ficar exposto a fiscalizações legais. O NOVAVIX GO te auxiliará em todo processo! Entre em contato.
-'
+    imagemUrl: '/logo_inspe.png',
+    resumoPost: 'Nos dias atuais sua empresa não pode estar sujeita a processos demorados e burocráticos, pois irá perder competitividade e eficácia, além de ficar exposto a fiscalizações legais. O NOVAVIX GO te auxiliará em todo processo! Entre em contato.'
   },
   {
     _id: '3',
     tituloPost: 'Novidades na legislação de SST para 2026',
     slug: 'https://wa.me/5527992655561',
     data: '25/03/2026',
-    imagemUrl: '/blog-normas.jpg', // Coloque esta foto na pasta /public
+    imagemUrl: '/blog-normas.jpg', 
     resumoPost: 'Fique por dentro das atualizações das NRs e como o Novavix GO já está preparado para as mudanças.'
   }
 ];
@@ -172,7 +171,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* BLOG - AGORA 100% LOCAL */}
+      {/* BLOG */}
       <section id="blog" className="py-24 bg-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16 flex flex-row justify-between items-end border-b border-slate-200 pb-4">
@@ -201,7 +200,7 @@ export default function HomePage() {
                 <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow font-medium">{post.resumoPost}</p>
                 <div className="flex justify-between items-center border-t border-slate-50 pt-4">
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{post.data}</p>
-                  <Link href={post.slug} className="text-blue-600 font-bold text-[9px] uppercase tracking-widest hover:underline flex items-center gap-1">
+                  <Link href={post.slug} target="_blank" className="text-blue-600 font-bold text-[9px] uppercase tracking-widest hover:underline flex items-center gap-1">
                     Saiba mais <ChevronRight size={12} />
                   </Link>
                 </div>
