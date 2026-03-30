@@ -38,7 +38,7 @@ const POSTS_LOCAIS = [
     tituloPost: 'Novidades na legislação de SST para 2026',
     slug: 'https://wa.me/5527992655561',
     data: '25/03/2026',
-    imagemUrl: '/blog-normas.jpg', 
+    imagemUrl: '/logo_nr.png', 
     resumoPost: 'Fique por dentro das atualizações das NRs e como o Novavix GO já está preparado para as mudanças.'
   }
 ];
