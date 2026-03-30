@@ -151,40 +151,49 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* BLOG */}
-      <section id="blog" className="py-24 bg-white scroll-mt-20">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="mb-16">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic text-center lg:text-left">Novidades (Blog)</h2>
-            <div className="h-1 w-20 bg-blue-600 mt-2 mx-auto lg:mx-0" />
+      {/* BLOG - COM TEXTO COMPLETO E DATA BR */}
+<section id="blog" className="py-24 bg-white scroll-mt-20">
+  <div className="max-w-7xl mx-auto px-6">
+    <div className="mb-16">
+      <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic text-center lg:text-left">Novidades (Blog)</h2>
+      <div className="h-1 w-20 bg-blue-600 mt-2 mx-auto lg:mx-0" />
+    </div>
+    <div className="grid md:grid-cols-3 gap-8">
+      {posts.map((post: any) => (
+        <div key={post._id} className="bg-white rounded-3xl p-6 border border-slate-100 group shadow-sm hover:shadow-md transition-all flex flex-col h-full">
+          <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-6 bg-slate-50">
+            {post.imagemUrl ? (
+              <Image src={post.imagemUrl} alt={post.tituloPost} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-slate-300"><Rss size={40} /></div>
+            )}
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {posts.map((post: any) => (
-              <div key={post._id} className="bg-white rounded-3xl p-6 border border-slate-100 group shadow-sm hover:shadow-md transition-all">
-                <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-6 bg-slate-50">
-                  {post.imagemUrl ? (
-                    <Image src={post.imagemUrl} alt={post.tituloPost} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-slate-300"><Rss size={40} /></div>
-                  )}
-                </div>
-                <h4 className="font-bold text-lg tracking-tight text-slate-900 mb-2 leading-tight">{post.tituloPost}</h4>
-                <p className="text-slate-500 text-sm leading-relaxed mb-4 line-clamp-3">{post.resumoPost}</p>
-                <div className="flex justify-between items-center border-t border-slate-50 pt-4">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                    {new Date(post._createdAt).toLocaleDateString()}
-                  </p>
-                  {post.slug && (
-                    <Link href={post.slug} target="_blank" className="text-blue-600 font-bold text-[9px] uppercase tracking-widest hover:underline flex items-center gap-1">
-                      Ler notícia <ChevronRight size={12} />
-                    </Link>
-                  )}
-                </div>
-              </div>
-            ))}
+          
+          <h4 className="font-bold text-lg tracking-tight text-slate-900 mb-2 leading-tight">
+            {post.tituloPost}
+          </h4>
+          
+          {/* Removido o line-clamp-3 para o texto não cortar mais */}
+          <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow font-medium">
+            {post.resumoPost}
+          </p>
+          
+          <div className="flex justify-between items-center border-t border-slate-50 pt-4">
+            {/* Data formatada para o padrão brasileiro */}
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+              {new Date(post._createdAt).toLocaleDateString('pt-BR')}
+            </p>
+            {post.slug && (
+              <Link href={post.slug} target="_blank" className="text-blue-600 font-bold text-[9px] uppercase tracking-widest hover:underline flex items-center gap-1">
+                Ler notícia <ChevronRight size={12} />
+              </Link>
+            )}
           </div>
         </div>
-      </section>
+      ))}
+    </div>
+  </div>
+</section>
 
       <footer className="bg-white py-12 border-t border-slate-100 text-center">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
