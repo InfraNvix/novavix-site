@@ -40,8 +40,8 @@ export default function HomePage() {
   }, []);
 
   // Textos Otimizados para SEO (Fallbacks)
-  const title = data?.landing?.tituloHero || 'Software de Gestão de SST e eSocial: Segurança do Trabalho Digital';
-  const subtitle = data?.landing?.subtituloHero || 'O NOVAVIX GO centraliza e automatiza seus eventos de SST, PGR e PCMSO com foco em conformidade e agilidade.';
+  const title = 'Software de Gestão de SST e eSocial: Segurança do Trabalho Digital';
+  const subtitle = 'O NOVAVIX GO centraliza e automatiza seus eventos de SST, PGR e PCMSO com foco em conformidade e agilidade.';
   const posts = data?.posts || [];
 
   const scrollToTop = (e: React.MouseEvent) => {
