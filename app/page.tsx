@@ -39,8 +39,9 @@ export default function HomePage() {
     fetchLandingData();
   }, []);
 
-  const title = data?.landing?.tituloHero || 'Segurança do Trabalho Digital e Eficiente';
-  const subtitle = data?.landing?.subtituloHero || 'O NOVAVIX GO centraliza seus eventos de SST, PGR e PCMSO.';
+  // Textos Otimizados para SEO (Fallbacks)
+  const title = data?.landing?.tituloHero || 'Software de Gestão de SST e eSocial: Segurança do Trabalho Digital';
+  const subtitle = data?.landing?.subtituloHero || 'O NOVAVIX GO centraliza e automatiza seus eventos de SST, PGR e PCMSO com foco em conformidade e agilidade.';
   const posts = data?.posts || [];
 
   const scrollToTop = (e: React.MouseEvent) => {
@@ -58,7 +59,7 @@ export default function HomePage() {
             <Link href="/" className="relative w-[150px] h-[45px] block">
               <Image 
                 src="/logo-novavix.png" 
-                alt="Novavix Logo" 
+                alt="Novavix - Software de Gestão de Segurança do Trabalho" 
                 fill 
                 className="object-contain object-left" 
                 priority 
@@ -84,7 +85,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
           <div>
             <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-6">
-              <Zap size={14} /> Inteligência em SST & eSocial
+              <Zap size={14} /> Sistema de Gestão de SST Online
             </div>
             <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter leading-[0.95] mb-8 whitespace-pre-line uppercase italic">
               {title}
@@ -104,7 +105,7 @@ export default function HomePage() {
             <div className="rounded-3xl aspect-video w-full overflow-hidden shadow-md relative bg-white flex items-center justify-center p-8 mb-8">
               <Image 
                 src="/logo_nvixgo.png" 
-                alt="Novavix GO" 
+                alt="Novavix GO - Plataforma de Saúde e Segurança Ocupacional" 
                 fill 
                 className="object-contain group-hover:scale-105 transition-transform duration-500"
               />
@@ -120,12 +121,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SEÇÃO SOLUÇÕES */}
+      {/* SEÇÃO SOLUÇÕES - TEXTOS OTIMIZADOS */}
       <section id="solucoes" className="py-24 bg-slate-50/50 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16 flex flex-row justify-between items-end border-b border-slate-200 pb-4">
             <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">O que entregamos</h2>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+                Soluções Completas para SST e Gestão Ocupacional
+              </h2>
               <div className="h-1 w-20 bg-blue-600 mt-4" />
             </div>
             <a 
@@ -140,33 +143,33 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
             <div className="space-y-4">
               <div className="text-blue-600"><Zap size={32} strokeWidth={3} /></div>
-              <h4 className="font-bold text-xl tracking-tight uppercase">Agilidade no eSocial</h4>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Envio automático dos eventos de SST para total conformidade.</p>
+              <h3 className="font-bold text-xl tracking-tight uppercase">Mensageria eSocial SST</h3>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Envio automatizado dos eventos <strong>S-2210, S-2220, S-2240 e S-2241</strong> para total conformidade legal.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><ShieldCheck size={32} strokeWidth={3} /></div>
-              <h4 className="font-bold text-xl tracking-tight uppercase">PGR & PCMSO</h4>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Documentação integrada, atualizada e sempre acessível.</p>
+              <h3 className="font-bold text-xl tracking-tight uppercase">Emissão de PGR e PCMSO</h3>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Geração de documentos base, inventários de riscos e cronogramas de forma integrada e automatizada.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><BarChart3 size={32} strokeWidth={3} /></div>
-              <h4 className="font-bold text-xl tracking-tight uppercase">Gestão Eficiente</h4>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Indicadores estratégicos em tempo real para sua empresa.</p>
+              <h3 className="font-bold text-xl tracking-tight uppercase">Gestão Ocupacional</h3>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Dashboards com indicadores estratégicos em tempo real para controle total da saúde e segurança.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><FileText size={32} strokeWidth={3} /></div>
-              <h4 className="font-bold text-xl tracking-tight uppercase">Formulários Customizáveis</h4>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Tenha formulários de exames conforme sua necessidade. Não fique preso a padrões!</p>
+              <h3 className="font-bold text-xl tracking-tight uppercase">Prontuário e Exames</h3>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Formulários de exames customizáveis para atender às particularidades da sua clínica ou empresa.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><DollarSign size={32} strokeWidth={3} /></div>
-              <h4 className="font-bold text-xl tracking-tight uppercase">Faturamento Imediato</h4>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Todo faturamento plenamente integrado com seu atendimento de forma automática!</p>
+              <h3 className="font-bold text-xl tracking-tight uppercase">Faturamento Integrado</h3>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Integração automática entre o atendimento médico/técnico e o faturamento de serviços de SST.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><Eye size={32} strokeWidth={3} /></div>
-              <h4 className="font-bold text-xl tracking-tight uppercase">Transparência</h4>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Seu cliente acompanha todo o processo em tempo real através de nosso Portal Web dedicado.</p>
+              <h3 className="font-bold text-xl tracking-tight uppercase">Portal Web Dedicado</h3>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Transparência total para o seu cliente final acompanhar documentos e envios em tempo real.</p>
             </div>
           </div>
         </div>
@@ -177,7 +180,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16 flex flex-row justify-between items-end border-b border-slate-200 pb-4">
             <div>
-              <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Novidades (Blog)</h2>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Notícias e Novidades SST</h2>
               <div className="h-1 w-20 bg-blue-600 mt-4" />
             </div>
             <a 
@@ -219,7 +222,7 @@ export default function HomePage() {
 
       <footer className="bg-white py-12 border-t border-slate-100 text-center">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-          © 2026 Novavix Sistemas - Gestão SST Inteligente
+          © 2026 Novavix Sistemas - Gestão SST Inteligente e eSocial
         </p>
       </footer>
     </div>
