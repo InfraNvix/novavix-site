@@ -42,18 +42,34 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
       
-      {/* NAVBAR */}
+     {/* NAVBAR COM BOTÃO VOLTAR */}
       <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          <div className="relative w-[150px] h-[45px]">
-            <Image 
-              src="/logo-novavix.png" 
-              alt="Novavix Logo" 
-              fill 
-              className="object-contain object-left" 
-              priority 
-            />
+          
+          <div className="flex items-center gap-8">
+            {/* LINK VOLTAR (Conforme sua imagem) */}
+            <button 
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors hidden sm:block"
+            >
+              VOLTAR PARA INÍCIO
+            </button>
+
+            {/* LOGO (Também clicável para voltar) */}
+            <div 
+              className="relative w-[150px] h-[45px] cursor-pointer"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            >
+              <Image 
+                src="/logo-novavix.png" 
+                alt="Novavix Logo" 
+                fill 
+                className="object-contain object-left" 
+                priority 
+              />
+            </div>
           </div>
+
           <div className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-slate-400">
             <a href="#solucoes" className="hover:text-blue-600 transition-colors">Soluções</a>
             <a href="#blog" className="hover:text-blue-600 transition-colors">Blog</a>
