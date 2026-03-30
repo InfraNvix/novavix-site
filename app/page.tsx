@@ -129,7 +129,7 @@ export default async function HomePage() {
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><BarChart3 size={32} strokeWidth={3} /></div>
-              <h4 className="font-bold text-xl tracking-tight uppercase">Dashboards</h4>
+              <h4 className="font-bold text-xl tracking-tight uppercase">Gestão Eficiente</h4>
               <p className="text-slate-500 text-sm leading-relaxed font-medium">Indicadores estratégicos em tempo real para sua empresa.</p>
             </div>
             <div className="space-y-4">
