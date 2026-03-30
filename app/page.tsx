@@ -42,24 +42,21 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
       
-     {/* NAVBAR COM BOTÃO VOLTAR */}
+     {/* NAVBAR CORRIGIDA PARA EVITAR ERRO DE SERVIDOR */}
       <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           
           <div className="flex items-center gap-8">
-            {/* LINK VOLTAR (Conforme sua imagem) */}
-            <button 
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            {/* VOLTAR PARA INÍCIO usando Link simples (mais seguro) */}
+            <Link 
+              href="/"
               className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors hidden sm:block"
             >
               VOLTAR PARA INÍCIO
-            </button>
+            </Link>
 
-            {/* LOGO (Também clicável para voltar) */}
-            <div 
-              className="relative w-[150px] h-[45px] cursor-pointer"
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            >
+            {/* LOGO */}
+            <Link href="/" className="relative w-[150px] h-[45px] block">
               <Image 
                 src="/logo-novavix.png" 
                 alt="Novavix Logo" 
@@ -67,8 +64,21 @@ export default async function HomePage() {
                 className="object-contain object-left" 
                 priority 
               />
-            </div>
+            </Link>
           </div>
+
+          <div className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <a href="#solucoes" className="hover:text-blue-600 transition-colors">Soluções</a>
+            <a href="#blog" className="hover:text-blue-600 transition-colors">Blog</a>
+            <Link 
+              href="/" 
+              className="bg-slate-900 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-slate-200 ml-4"
+            >
+              Acesso Restrito
+            </Link>
+          </div>
+        </div>
+      </nav>
 
           <div className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-slate-400">
             <a href="#solucoes" className="hover:text-blue-600 transition-colors">Soluções</a>
