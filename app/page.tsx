@@ -1,10 +1,10 @@
+'use client'
+
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShieldCheck, Zap, BarChart3, ChevronRight, LayoutDashboard, Rss, FileText, DollarSign, Eye } from 'lucide-react';
+import { ShieldCheck, Zap, BarChart3, ChevronRight, Rss, FileText, DollarSign, Eye } from 'lucide-react';
 import { createClient } from 'next-sanity';
-
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+import { useEffect, useState } from 'react';
 
 const client = createClient({
   projectId: '70qpcg23',
@@ -13,39 +13,47 @@ const client = createClient({
   useCdn: false,
 });
 
-async function getLandingData() {
-  const query = `{
-    "landing": *[_type == "landingPage"][0]{
-      tituloHero,
-      subtituloHero
-    },
-    "posts": *[_type == "post"] | order(_createdAt desc)[0...3]{
-      _id,
-      "tituloPost": title,
-      "slug": slug.current,
-      _createdAt,
-      "imagemUrl": mainImage.asset->url,
-      "resumoPost": body[0].children[0].text
-    }
-  }`;
-  
-  return await client.fetch(query, {}, { cache: 'no-store' });
-}
+export default function HomePage() {
+  const [data, setData] = useState<any>(null);
 
-export default async function HomePage() {
-  const data = await getLandingData();
-  
+  useEffect(() => {
+    const fetchLandingData = async () => {
+      const query = `{
+        "landing": *[_type == "landingPage"][0]{
+          tituloHero,
+          subtituloHero
+        },
+        "posts": *[_type == "post"] | order(_createdAt desc)[0...3]{
+          _id,
+          "tituloPost": title,
+          "slug": slug.current,
+          _createdAt,
+          "imagemUrl": mainImage.asset->url,
+          "resumoPost": body[0].children[0].text
+        }
+      }`;
+      const result = await client.fetch(query);
+      setData(result);
+    };
+
+    fetchLandingData();
+  }, []);
+
   const title = data?.landing?.tituloHero || 'Segurança do Trabalho Digital e Eficiente';
   const subtitle = data?.landing?.subtituloHero || 'O NOVAVIX GO centraliza seus eventos de SST, PGR e PCMSO.';
   const posts = data?.posts || [];
 
+  const scrollToTop = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
       
-     {/* NAVBAR: Agora limpa, sem o botão de voltar */}
+      {/* NAVBAR */}
       <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          
           <div className="flex items-center gap-8">
             <Link href="/" className="relative w-[150px] h-[45px] block">
               <Image 
@@ -115,10 +123,20 @@ export default async function HomePage() {
       {/* SEÇÃO SOLUÇÕES */}
       <section id="solucoes" className="py-24 bg-slate-50/50 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="mb-16">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">O que entregamos</h2>
-            <div className="h-1 w-20 bg-blue-600 mt-2" />
+          <div className="mb-16 flex flex-row justify-between items-end border-b border-slate-200 pb-4">
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">O que entregamos</h2>
+              <div className="h-1 w-20 bg-blue-600 mt-4" />
+            </div>
+            <a 
+              href="#" 
+              onClick={scrollToTop}
+              className="group flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-blue-600 hover:text-slate-900 transition-all bg-white px-4 py-2 rounded-full border border-blue-100 shadow-sm"
+            >
+              <span className="group-hover:-translate-y-0.5 transition-transform text-lg">↑</span> VOLTAR AO INÍCIO
+            </a>
           </div>
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
             <div className="space-y-4">
               <div className="text-blue-600"><Zap size={32} strokeWidth={3} /></div>
@@ -157,10 +175,20 @@ export default async function HomePage() {
       {/* BLOG */}
       <section id="blog" className="py-24 bg-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="mb-16">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic text-center lg:text-left">Novidades (Blog)</h2>
-            <div className="h-1 w-20 bg-blue-600 mt-2 mx-auto lg:mx-0" />
+          <div className="mb-16 flex flex-row justify-between items-end border-b border-slate-200 pb-4">
+            <div>
+              <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Novidades (Blog)</h2>
+              <div className="h-1 w-20 bg-blue-600 mt-4" />
+            </div>
+            <a 
+              href="#" 
+              onClick={scrollToTop}
+              className="group flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-blue-600 hover:text-slate-900 transition-all bg-slate-50 px-4 py-2 rounded-full border border-blue-100 shadow-sm"
+            >
+              <span className="group-hover:-translate-y-0.5 transition-transform text-lg">↑</span> VOLTAR AO INÍCIO
+            </a>
           </div>
+
           <div className="grid md:grid-cols-3 gap-8">
             {posts.map((post: any) => (
               <div key={post._id} className="bg-white rounded-3xl p-6 border border-slate-100 group shadow-sm hover:shadow-md transition-all flex flex-col h-full">
