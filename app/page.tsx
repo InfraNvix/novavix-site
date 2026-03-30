@@ -42,17 +42,20 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
       
-      {/* NAVBAR */}
+     {/* NAVBAR AJUSTADA */}
       <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center gap-4 md:gap-8">
+            {/* VOLTAR PARA INÍCIO - Agora visível em todos os tamanhos e com cor mais nítida */}
             <Link 
               href="/"
-              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors hidden sm:block"
+              className="text-[11px] font-black uppercase tracking-widest text-blue-600 hover:text-slate-900 transition-colors"
             >
-              VOLTAR PARA INÍCIO
+              ← VOLTAR
             </Link>
-            <Link href="/" className="relative w-[150px] h-[45px] block">
+
+            {/* LOGO */}
+            <Link href="/" className="relative w-[120px] md:w-[150px] h-[45px] block">
               <Image 
                 src="/logo-novavix.png" 
                 alt="Novavix Logo" 
@@ -62,6 +65,7 @@ export default async function HomePage() {
               />
             </Link>
           </div>
+
           <div className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-slate-400">
             <a href="#solucoes" className="hover:text-blue-600 transition-colors">Soluções</a>
             <a href="#blog" className="hover:text-blue-600 transition-colors">Blog</a>
