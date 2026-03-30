@@ -2,48 +2,49 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShieldCheck, Zap, BarChart3, ChevronRight, Rss, FileText, DollarSign, Eye } from 'lucide-react';
-import { createClient } from 'next-sanity';
-import { useEffect, useState } from 'react';
+import { ShieldCheck, Zap, BarChart3, ChevronRight, FileText, DollarSign, Eye } from 'lucide-react';
+import { useState } from 'react';
 
-const client = createClient({
-  projectId: '70qpcg23',
-  dataset: 'production',
-  apiVersion: '2024-03-19',
-  useCdn: false,
-});
+// =================================================================
+// 1. CONFIGURAÇÃO DOS TEXTOS PRINCIPAIS (SEO)
+// =================================================================
+const SEO_CONTENT = {
+  title: 'Software de Gestão de SST e eSocial: Segurança do Trabalho Digital',
+  subtitle: 'O NOVAVIX GO centraliza e automatiza seus eventos de SST, PGR e PCMSO com foco em conformidade e agilidade.',
+};
+
+// =================================================================
+// 2. BANCO DE DADOS LOCAL DO BLOG (Atualize aqui seus posts!)
+// =================================================================
+const POSTS_LOCAIS = [
+  {
+    _id: '1',
+    tituloPost: 'Riscos Psicossociais NR1- MTE lança manual de orientação',
+    slug: 'https://www.gov.br/trabalho-e-emprego/pt-br/noticias-e-conteudo/2026/marco/mte-lanca-manual-para-orientar-gestao-de-riscos-ocupacionais-nas-empresas',
+    data: '30/03/2026',
+    imagemUrl: '/logo_psico.png/ Coloque esta foto na pasta /public
+    resumoPost: 'O MTE lançou no último dia 16/03/2026 o manual para orientar gestão de riscos ocupacionais nas empresas. Sua Empresa ainda tem dificuldades com o mapeamento dos riscos conforme nova NR1? O NOVAVIX GO tem a solução mais simples e eficaz para sua gestão!'
+  },
+  {
+    _id: '2',
+    tituloPost: 'Fiscalização de Segurança e Saúde no Trabalho',
+    slug: 'https://www.gov.br/trabalho-e-emprego/pt-br/assuntos/inspecao-do-trabalho/seguranca-e-saude-no-trabalho',
+    data: '30/03/2026',
+    imagemUrl: '/logo_inspe.png/ Coloque esta foto na pasta /public
+    resumoPost: 'Nos dias atuais sua empresa não pode estar sujeita a processos demorados e burocráticos, pois irá perder competitividade e eficácia, além de ficar exposto a fiscalizações legais. O NOVAVIX GO te auxiliará em todo processo! Entre em contato.
+'
+  },
+  {
+    _id: '3',
+    tituloPost: 'Novidades na legislação de SST para 2026',
+    slug: 'https://wa.me/5527992655561',
+    data: '25/03/2026',
+    imagemUrl: '/blog-normas.jpg', // Coloque esta foto na pasta /public
+    resumoPost: 'Fique por dentro das atualizações das NRs e como o Novavix GO já está preparado para as mudanças.'
+  }
+];
 
 export default function HomePage() {
-  const [data, setData] = useState<any>(null);
-
-  useEffect(() => {
-    const fetchLandingData = async () => {
-      const query = `{
-        "landing": *[_type == "landingPage"][0]{
-          tituloHero,
-          subtituloHero
-        },
-        "posts": *[_type == "post"] | order(_createdAt desc)[0...3]{
-          _id,
-          "tituloPost": title,
-          "slug": slug.current,
-          _createdAt,
-          "imagemUrl": mainImage.asset->url,
-          "resumoPost": body[0].children[0].text
-        }
-      }`;
-      const result = await client.fetch(query);
-      setData(result);
-    };
-
-    fetchLandingData();
-  }, []);
-
-  // Textos Otimizados para SEO (Fallbacks)
-  const title = 'Software de Gestão de SST e eSocial: Segurança do Trabalho Digital';
-  const subtitle = 'O NOVAVIX GO centraliza e automatiza seus eventos de SST, PGR e PCMSO com foco em conformidade e agilidade.';
-  const posts = data?.posts || [];
-
   const scrollToTop = (e: React.MouseEvent) => {
     e.preventDefault();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -88,10 +89,10 @@ export default function HomePage() {
               <Zap size={14} /> Sistema de Gestão de SST Online
             </div>
             <h1 className="text-5xl lg:text-6xl font-black text-slate-900 tracking-tighter leading-[0.95] mb-8 whitespace-pre-line uppercase italic">
-              {title}
+              {SEO_CONTENT.title}
             </h1>
             <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-[480px] mb-10">
-              {subtitle}
+              {SEO_CONTENT.subtitle}
             </p>
             <Link 
               href="https://wa.me/5527992655561" 
@@ -114,28 +115,24 @@ export default function HomePage() {
               <p className="text-slate-900 font-black uppercase tracking-[0.4em] text-[10px]">Novavix GO</p>
               <div className="h-[2px] w-12 bg-blue-500 my-3 mx-auto" />
               <p className="text-slate-500 font-medium text-[12px] leading-relaxed max-w-sm mx-auto">
-                Nosso principal produto, o NOVAVIX GO, é um sistema completo de gestão para empresas do setor de prestação de serviços do ramo de Saúde, Segurança e Higiene Ocupacional.
+                O NOVAVIX GO é um sistema completo de gestão para empresas do setor de Saúde, Segurança e Higiene Ocupacional.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* SEÇÃO SOLUÇÕES - TEXTOS OTIMIZADOS */}
+      {/* SOLUÇÕES */}
       <section id="solucoes" className="py-24 bg-slate-50/50 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16 flex flex-row justify-between items-end border-b border-slate-200 pb-4">
             <div>
               <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-                Soluções Completas para SST e Gestão Ocupacional
+                Soluções Completas para SST e eSocial
               </h2>
               <div className="h-1 w-20 bg-blue-600 mt-4" />
             </div>
-            <a 
-              href="#" 
-              onClick={scrollToTop}
-              className="group flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-blue-600 hover:text-slate-900 transition-all bg-white px-4 py-2 rounded-full border border-blue-100 shadow-sm"
-            >
+            <a href="#" onClick={scrollToTop} className="group flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-blue-600 hover:text-slate-900 transition-all bg-white px-4 py-2 rounded-full border border-blue-100 shadow-sm">
               <span className="group-hover:-translate-y-0.5 transition-transform text-lg">↑</span> VOLTAR AO INÍCIO
             </a>
           </div>
@@ -144,38 +141,38 @@ export default function HomePage() {
             <div className="space-y-4">
               <div className="text-blue-600"><Zap size={32} strokeWidth={3} /></div>
               <h3 className="font-bold text-xl tracking-tight uppercase">Mensageria eSocial SST</h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Envio automatizado dos eventos <strong>S-2210, S-2220, S-2240 e S-2241</strong> para total conformidade legal.</p>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Envio automatizado dos eventos <strong>S-2210, S-2220, S-2240 e S-2241</strong> para total conformidade.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><ShieldCheck size={32} strokeWidth={3} /></div>
               <h3 className="font-bold text-xl tracking-tight uppercase">Emissão de PGR e PCMSO</h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Geração de documentos base, inventários de riscos e cronogramas de forma integrada e automatizada.</p>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Geração de documentos base, inventários de riscos e cronogramas integrados.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><BarChart3 size={32} strokeWidth={3} /></div>
               <h3 className="font-bold text-xl tracking-tight uppercase">Gestão Ocupacional</h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Dashboards com indicadores estratégicos em tempo real para controle total da saúde e segurança.</p>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Dashboards estratégicos em tempo real para controle total da saúde ocupacional.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><FileText size={32} strokeWidth={3} /></div>
               <h3 className="font-bold text-xl tracking-tight uppercase">Prontuário e Exames</h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Formulários de exames customizáveis para atender às particularidades da sua clínica ou empresa.</p>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Formulários customizáveis para atender às necessidades da sua clínica.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><DollarSign size={32} strokeWidth={3} /></div>
               <h3 className="font-bold text-xl tracking-tight uppercase">Faturamento Integrado</h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Integração automática entre o atendimento médico/técnico e o faturamento de serviços de SST.</p>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Integração automática entre o atendimento técnico e o faturamento de serviços.</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><Eye size={32} strokeWidth={3} /></div>
-              <h3 className="font-bold text-xl tracking-tight uppercase">Portal Web Dedicado</h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Transparência total para o seu cliente final acompanhar documentos e envios em tempo real.</p>
+              <h3 className="font-bold text-xl tracking-tight uppercase">Portal do Cliente</h3>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Transparência total para seu cliente acompanhar documentos e envios em tempo real.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* BLOG */}
+      {/* BLOG - AGORA 100% LOCAL */}
       <section id="blog" className="py-24 bg-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16 flex flex-row justify-between items-end border-b border-slate-200 pb-4">
@@ -183,36 +180,30 @@ export default function HomePage() {
               <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Notícias e Novidades SST</h2>
               <div className="h-1 w-20 bg-blue-600 mt-4" />
             </div>
-            <a 
-              href="#" 
-              onClick={scrollToTop}
-              className="group flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-blue-600 hover:text-slate-900 transition-all bg-slate-50 px-4 py-2 rounded-full border border-blue-100 shadow-sm"
-            >
+            <a href="#" onClick={scrollToTop} className="group flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-blue-600 hover:text-slate-900 transition-all bg-slate-50 px-4 py-2 rounded-full border border-blue-100 shadow-sm">
               <span className="group-hover:-translate-y-0.5 transition-transform text-lg">↑</span> VOLTAR AO INÍCIO
             </a>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {posts.map((post: any) => (
+            {POSTS_LOCAIS.map((post) => (
               <div key={post._id} className="bg-white rounded-3xl p-6 border border-slate-100 group shadow-sm hover:shadow-md transition-all flex flex-col h-full">
                 <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-6 bg-slate-50">
-                  {post.imagemUrl ? (
-                    <Image src={post.imagemUrl} alt={post.tituloPost} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-slate-300"><Rss size={40} /></div>
-                  )}
+                  <Image 
+                    src={post.imagemUrl} 
+                    alt={post.tituloPost} 
+                    fill 
+                    className="object-cover group-hover:scale-105 transition-transform duration-300" 
+                    onError={(e: any) => { e.target.src = "https://via.placeholder.com/400x250?text=Novavix+Blog" }}
+                  />
                 </div>
                 <h4 className="font-bold text-lg tracking-tight text-slate-900 mb-2 leading-tight">{post.tituloPost}</h4>
                 <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow font-medium">{post.resumoPost}</p>
                 <div className="flex justify-between items-center border-t border-slate-50 pt-4">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                    {new Date(post._createdAt).toLocaleDateString('pt-BR')}
-                  </p>
-                  {post.slug && (
-                    <Link href={post.slug} target="_blank" className="text-blue-600 font-bold text-[9px] uppercase tracking-widest hover:underline flex items-center gap-1">
-                      Ler notícia <ChevronRight size={12} />
-                    </Link>
-                  )}
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{post.data}</p>
+                  <Link href={post.slug} className="text-blue-600 font-bold text-[9px] uppercase tracking-widest hover:underline flex items-center gap-1">
+                    Saiba mais <ChevronRight size={12} />
+                  </Link>
                 </div>
               </div>
             ))}
