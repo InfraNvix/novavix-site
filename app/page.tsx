@@ -154,8 +154,8 @@ export default function HomePage() {
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><FileText size={32} strokeWidth={3} /></div>
-              <h3 className="font-bold text-xl tracking-tight uppercase">Prontuário e Exames</h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">Formulários customizáveis para atender às necessidades da sua clínica.</p>
+              <h3 className="font-bold text-xl tracking-tight uppercase">Prontuário, Exames e ASO</h3>
+              <p className="text-slate-500 text-sm leading-relaxed font-medium">Formulários customizáveis para atender às necessidades da sua clínica e ASO com assinatura digital</p>
             </div>
             <div className="space-y-4">
               <div className="text-blue-600"><DollarSign size={32} strokeWidth={3} /></div>
