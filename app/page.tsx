@@ -42,20 +42,16 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-blue-100 origin-top scale-90 lg:scale-100">
       
-     {/* NAVBAR CORRIGIDA PARA EVITAR ERRO DE SERVIDOR */}
+      {/* NAVBAR */}
       <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          
           <div className="flex items-center gap-8">
-            {/* VOLTAR PARA INÍCIO usando Link simples (mais seguro) */}
             <Link 
               href="/"
               className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-colors hidden sm:block"
             >
               VOLTAR PARA INÍCIO
             </Link>
-
-            {/* LOGO */}
             <Link href="/" className="relative w-[150px] h-[45px] block">
               <Image 
                 src="/logo-novavix.png" 
@@ -66,20 +62,6 @@ export default async function HomePage() {
               />
             </Link>
           </div>
-
-          <div className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-slate-400">
-            <a href="#solucoes" className="hover:text-blue-600 transition-colors">Soluções</a>
-            <a href="#blog" className="hover:text-blue-600 transition-colors">Blog</a>
-            <Link 
-              href="/" 
-              className="bg-slate-900 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-slate-200 ml-4"
-            >
-              Acesso Restrito
-            </Link>
-          </div>
-        </div>
-      </nav>
-
           <div className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-slate-400">
             <a href="#solucoes" className="hover:text-blue-600 transition-colors">Soluções</a>
             <a href="#blog" className="hover:text-blue-600 transition-colors">Blog</a>
@@ -114,7 +96,6 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          {/* QUADRO DA LOGO NVIXGO */}
           <div className="relative group p-6 bg-slate-50 border border-slate-100 rounded-[40px] shadow-sm">
             <div className="rounded-3xl aspect-video w-full overflow-hidden shadow-md relative bg-white flex items-center justify-center p-8 mb-8">
               <Image 
@@ -135,7 +116,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* SEÇÃO SOLUÇÕES - 6 ITENS */}
+      {/* SEÇÃO SOLUÇÕES */}
       <section id="solucoes" className="py-24 bg-slate-50/50 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="mb-16">
@@ -177,49 +158,40 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* BLOG - COM TEXTO COMPLETO E DATA BR */}
-<section id="blog" className="py-24 bg-white scroll-mt-20">
-  <div className="max-w-7xl mx-auto px-6">
-    <div className="mb-16">
-      <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic text-center lg:text-left">Novidades (Blog)</h2>
-      <div className="h-1 w-20 bg-blue-600 mt-2 mx-auto lg:mx-0" />
-    </div>
-    <div className="grid md:grid-cols-3 gap-8">
-      {posts.map((post: any) => (
-        <div key={post._id} className="bg-white rounded-3xl p-6 border border-slate-100 group shadow-sm hover:shadow-md transition-all flex flex-col h-full">
-          <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-6 bg-slate-50">
-            {post.imagemUrl ? (
-              <Image src={post.imagemUrl} alt={post.tituloPost} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-slate-300"><Rss size={40} /></div>
-            )}
+      {/* BLOG */}
+      <section id="blog" className="py-24 bg-white scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="mb-16">
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic text-center lg:text-left">Novidades (Blog)</h2>
+            <div className="h-1 w-20 bg-blue-600 mt-2 mx-auto lg:mx-0" />
           </div>
-          
-          <h4 className="font-bold text-lg tracking-tight text-slate-900 mb-2 leading-tight">
-            {post.tituloPost}
-          </h4>
-          
-          {/* Removido o line-clamp-3 para o texto não cortar mais */}
-          <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow font-medium">
-            {post.resumoPost}
-          </p>
-          
-          <div className="flex justify-between items-center border-t border-slate-50 pt-4">
-            {/* Data formatada para o padrão brasileiro */}
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-              {new Date(post._createdAt).toLocaleDateString('pt-BR')}
-            </p>
-            {post.slug && (
-              <Link href={post.slug} target="_blank" className="text-blue-600 font-bold text-[9px] uppercase tracking-widest hover:underline flex items-center gap-1">
-                Ler notícia <ChevronRight size={12} />
-              </Link>
-            )}
+          <div className="grid md:grid-cols-3 gap-8">
+            {posts.map((post: any) => (
+              <div key={post._id} className="bg-white rounded-3xl p-6 border border-slate-100 group shadow-sm hover:shadow-md transition-all flex flex-col h-full">
+                <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-6 bg-slate-50">
+                  {post.imagemUrl ? (
+                    <Image src={post.imagemUrl} alt={post.tituloPost} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-slate-300"><Rss size={40} /></div>
+                  )}
+                </div>
+                <h4 className="font-bold text-lg tracking-tight text-slate-900 mb-2 leading-tight">{post.tituloPost}</h4>
+                <p className="text-slate-500 text-sm leading-relaxed mb-6 flex-grow font-medium">{post.resumoPost}</p>
+                <div className="flex justify-between items-center border-t border-slate-50 pt-4">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                    {new Date(post._createdAt).toLocaleDateString('pt-BR')}
+                  </p>
+                  {post.slug && (
+                    <Link href={post.slug} target="_blank" className="text-blue-600 font-bold text-[9px] uppercase tracking-widest hover:underline flex items-center gap-1">
+                      Ler notícia <ChevronRight size={12} />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      ))}
-    </div>
-  </div>
-</section>
+      </section>
 
       <footer className="bg-white py-12 border-t border-slate-100 text-center">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
