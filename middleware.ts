@@ -100,13 +100,6 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return withSessionCookies(response, NextResponse.redirect(target))
   }
 
-  if (user && pathname === '/admin' && role === 'admin' && !DEMO_MODE_ENABLED) {
-    const target = request.nextUrl.clone()
-    target.pathname = '/dashboard/analytics'
-    target.search = ''
-    return withSessionCookies(response, NextResponse.redirect(target))
-  }
-
   if (user && isClinicRoute(pathname) && role !== 'clinica' && role !== 'admin') {
     const target = request.nextUrl.clone()
     target.pathname = DEFAULT_AUTH_REDIRECT
@@ -117,13 +110,6 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   if (user && isCompanyRoute(pathname) && role === 'clinica') {
     const adminUrl = request.nextUrl.clone()
     adminUrl.pathname = '/clinic'
-    adminUrl.search = ''
-    return withSessionCookies(response, NextResponse.redirect(adminUrl))
-  }
-
-  if (user && isCompanyRoute(pathname) && role === 'admin' && (pathname === '/dashboard' || pathname.startsWith('/portal'))) {
-    const adminUrl = request.nextUrl.clone()
-    adminUrl.pathname = '/dashboard/analytics'
     adminUrl.search = ''
     return withSessionCookies(response, NextResponse.redirect(adminUrl))
   }
