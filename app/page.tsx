@@ -70,12 +70,15 @@ export default function HomePage() {
           <div className="hidden md:flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-slate-400">
             <a href="#solucoes" className="hover:text-blue-600 transition-colors">Soluções</a>
             <a href="#blog" className="hover:text-blue-600 transition-colors">Blog</a>
-            <Link 
-              href="/" 
-              className="bg-slate-900 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-slate-200 ml-4"
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              className="bg-slate-300 text-slate-500 px-6 py-3 rounded-xl cursor-not-allowed shadow-lg shadow-slate-200 ml-4"
+              title="Acesso restrito temporariamente indisponivel"
             >
               Acesso Restrito
-            </Link>
+            </button>
           </div>
         </div>
       </nav>

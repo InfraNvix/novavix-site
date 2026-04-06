@@ -38,6 +38,10 @@ function endOfMonthISO(date: Date): string {
   return `${last.getUTCFullYear()}-${String(last.getUTCMonth() + 1).padStart(2, '0')}-${String(last.getUTCDate()).padStart(2, '0')}`
 }
 
+function isDateYYYYMMDD(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)
+}
+
 function classificationLabel(value: 'saudavel' | 'medio_alerta' | 'critico'): string {
   if (value === 'critico') return 'Critico'
   if (value === 'medio_alerta') return 'Alerta'
@@ -306,8 +310,10 @@ export default async function DashboardAnalyticsPage({
 
   const now = new Date()
   const queryCompanyId = (getSingleValue(searchParams?.companyId) ?? '').trim()
-  const periodStart = (getSingleValue(searchParams?.periodStart) ?? startOfMonthISO(now)).trim()
-  const periodEnd = (getSingleValue(searchParams?.periodEnd) ?? endOfMonthISO(now)).trim()
+  const periodStartInput = (getSingleValue(searchParams?.periodStart) ?? '').trim()
+  const periodEndInput = (getSingleValue(searchParams?.periodEnd) ?? '').trim()
+  const periodStart = isDateYYYYMMDD(periodStartInput) ? periodStartInput : startOfMonthISO(now)
+  const periodEnd = isDateYYYYMMDD(periodEndInput) ? periodEndInput : endOfMonthISO(now)
   const setorNome = (getSingleValue(searchParams?.setorNome) ?? '').trim() || null
   const gheNome = (getSingleValue(searchParams?.gheNome) ?? '').trim() || null
   const isTechnical = profile.role === 'admin' || profile.role === 'tecnico'
@@ -335,13 +341,38 @@ export default async function DashboardAnalyticsPage({
     gheNome,
   }
 
-  const [overview, timeseries, distribution, benchmark, drilldown] = await Promise.all([
-    getAnalyticsOverview(scope),
-    getAnalyticsTimeseries({ scope, grain: 'day', metric: 'avg_risk' }),
-    getAnalyticsDistribution({ scope, groupBy: 'setor', metric: 'avg_risk' }),
-    getAnalyticsBenchmark({ scope, dimensionCode: null }),
-    isTechnical ? getAnalyticsDrilldown({ scope, dimensionCode: null, page: 1, pageSize: 15 }) : null,
-  ])
+  let overview
+  let timeseries
+  let distribution
+  let benchmark
+  let drilldown
+
+  try {
+    ;[overview, timeseries, distribution, benchmark, drilldown] = await Promise.all([
+      getAnalyticsOverview(scope),
+      getAnalyticsTimeseries({ scope, grain: 'day', metric: 'avg_risk' }),
+      getAnalyticsDistribution({ scope, groupBy: 'setor', metric: 'avg_risk' }),
+      getAnalyticsBenchmark({ scope, dimensionCode: null }),
+      isTechnical ? getAnalyticsDrilldown({ scope, dimensionCode: null, page: 1, pageSize: 15 }) : null,
+    ])
+  } catch {
+    return (
+      <main className="min-h-screen bg-slate-50 p-6 md:p-10">
+        <section className="max-w-5xl mx-auto bg-white border border-rose-200 rounded-2xl p-6">
+          <h1 className="text-xl font-black text-slate-900">Analytics COPSOQ</h1>
+          <p className="text-sm text-rose-700 mt-3">
+            Nao foi possivel carregar os dados de analytics no momento.
+          </p>
+          <p className="text-xs text-slate-500 mt-2">
+            Verifique as migracoes/views de analytics e as variaveis de ambiente do Supabase no Render.
+          </p>
+          <Link href="/dashboard" className="inline-block mt-4 text-sm font-bold text-blue-700">
+            Voltar para dashboard
+          </Link>
+        </section>
+      </main>
+    )
+  }
 
   const seriesValues = timeseries.series.map((item) => item.value)
   const seriesLabels = timeseries.series.map((item) => item.bucket)

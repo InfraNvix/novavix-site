@@ -67,13 +67,6 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       return applySecurityHeaders(NextResponse.redirect(adminUrl))
     }
 
-    if (isAuthPage(pathname) && demoRole) {
-      const dashboardUrl = request.nextUrl.clone()
-      dashboardUrl.pathname = demoRole === 'admin' ? '/admin' : demoRole === 'clinica' ? '/clinic' : DEFAULT_AUTH_REDIRECT
-      dashboardUrl.search = ''
-      return applySecurityHeaders(NextResponse.redirect(dashboardUrl))
-    }
-
     return applySecurityHeaders(NextResponse.next())
   }
 
@@ -133,20 +126,6 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     adminUrl.pathname = '/dashboard/analytics'
     adminUrl.search = ''
     return withSessionCookies(response, NextResponse.redirect(adminUrl))
-  }
-
-  if (isAuthPage(pathname) && user) {
-    const dashboardUrl = request.nextUrl.clone()
-    dashboardUrl.pathname =
-      role === 'admin'
-        ? DEMO_MODE_ENABLED
-          ? '/admin'
-          : '/dashboard/analytics'
-        : role === 'clinica'
-        ? '/clinic'
-        : DEFAULT_AUTH_REDIRECT
-    dashboardUrl.search = ''
-    return withSessionCookies(response, NextResponse.redirect(dashboardUrl))
   }
 
   return applySecurityHeaders(response)
