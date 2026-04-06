@@ -122,6 +122,33 @@ export async function POST(request: Request): Promise<NextResponse> {
       conflictStrategy: parsed.data.conflictStrategy,
     })
 
+    if (result.status === 'failed') {
+      await writeImportAuditEvent({
+        eventName: 'imports.commit',
+        eventStatus: 'failure',
+        actorMode: access.mode,
+        actorRole: access.role,
+        actorUserId: access.userId,
+        actorEmail: access.loginEmail,
+        companyId: job.companyId,
+        jobId: job.id,
+        endpoint: '/api/imports/commit',
+        httpMethod: 'POST',
+        ip,
+        errorCode: 'IMPORT_COMMIT_FAILED',
+        payloadMeta: {
+          conflictStrategy: parsed.data.conflictStrategy,
+        },
+      })
+
+      return errorResponse(
+        422,
+        'DOMAIN_ERROR',
+        'Commit de importacao finalizado com falhas.',
+        result.issuesSample.map((issue) => issue.code).slice(0, 50)
+      )
+    }
+
     await writeImportAuditEvent({
       eventName: 'imports.commit',
       eventStatus: 'success',

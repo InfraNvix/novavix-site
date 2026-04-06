@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { isDemoCnpj } from '@/lib/auth/cnpj'
 import { DEMO_COMPANY_AUTH, DEMO_MODE_ENABLED } from '@/lib/auth/demo'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
@@ -37,6 +38,14 @@ function errorResponse(
     }
   }
   return response
+}
+
+function getPublicEnv(name: 'NEXT_PUBLIC_SUPABASE_URL' | 'NEXT_PUBLIC_SUPABASE_ANON_KEY'): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`)
+  }
+  return value
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -106,6 +115,26 @@ export async function POST(request: Request): Promise<NextResponse> {
       .maybeSingle()
 
     if (error || !data?.login_email) {
+      return errorResponse(401, 'AUTH_FAILED', 'Credenciais invalidas.')
+    }
+
+    const publicClient = createClient(
+      getPublicEnv('NEXT_PUBLIC_SUPABASE_URL'),
+      getPublicEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+
+    const { error: authError } = await publicClient.auth.signInWithPassword({
+      email: data.login_email,
+      password: parsed.data.password,
+    })
+
+    if (authError) {
       return errorResponse(401, 'AUTH_FAILED', 'Credenciais invalidas.')
     }
 

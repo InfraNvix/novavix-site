@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { normalizeCnpj } from '@/lib/auth/cnpj'
 import { DEMO_MODE_ENABLED } from '@/lib/auth/demo'
-import { validateStrongPassword } from '@/lib/auth/password-policy'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
 export default function LoginPage() {
@@ -27,14 +26,6 @@ export default function LoginPage() {
     event.preventDefault()
     setLoading(true)
     setError(null)
-
-    const passwordValidation = validateStrongPassword(password)
-
-    if (!passwordValidation.valid) {
-      setError(passwordValidation.errors[0] ?? 'Senha fora da politica minima.')
-      setLoading(false)
-      return
-    }
 
     if (DEMO_MODE_ENABLED) {
       if (mode === 'admin') {

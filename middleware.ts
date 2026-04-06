@@ -107,7 +107,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return withSessionCookies(response, NextResponse.redirect(target))
   }
 
-  if (user && isAdminRoute(pathname) && role === 'admin' && !DEMO_MODE_ENABLED) {
+  if (user && pathname === '/admin' && role === 'admin' && !DEMO_MODE_ENABLED) {
     const target = request.nextUrl.clone()
     target.pathname = '/dashboard/analytics'
     target.search = ''

@@ -146,10 +146,12 @@ export async function processImportCommit(input: ProcessImportCommitInput): Prom
 
   const rowsToPersist: ImportCollaboratorRow[] = []
   let ignoredRows = 0
+  let hasConflictInDatabase = false
   for (const row of candidateRows) {
     const alreadyExists = existingExternalIds.has(row.externalEmployeeId)
 
     if (alreadyExists && input.conflictStrategy === 'error') {
+      hasConflictInDatabase = true
       issues.push({
         rowNumber: row.rowNumber,
         columnKey: 'externalEmployeeId',
@@ -171,6 +173,25 @@ export async function processImportCommit(input: ProcessImportCommitInput): Prom
       setorNome: row.setorNome,
       gheNome: row.gheNome,
       cpfHash: row.cpfHash,
+    })
+  }
+
+  if (input.conflictStrategy === 'error' && hasConflictInDatabase) {
+    const invalidRows = issues.length
+    const summary = {
+      totalRows: table.rows.length,
+      validRows: Math.max(table.rows.length - invalidRows, 0),
+      invalidRows,
+      importedRows: 0,
+      ignoredRows: 0,
+    }
+
+    return markImportJobAsCommitted({
+      importJobId: input.importJobId,
+      mapping,
+      summary,
+      issuesSample: issues.slice(0, 50),
+      status: 'failed',
     })
   }
 

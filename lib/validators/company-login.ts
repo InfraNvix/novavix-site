@@ -1,5 +1,4 @@
 import { isValidCnpjFormat, normalizeCnpj } from '@/lib/auth/cnpj'
-import { validateStrongPassword } from '@/lib/auth/password-policy'
 
 export type CompanyLoginPayload = {
   cnpj: string
@@ -33,9 +32,8 @@ export function parseCompanyLoginPayload(input: unknown): CompanyLoginValidation
     errors.push('CNPJ invalido. Informe 14 digitos.')
   }
 
-  const passwordValidation = validateStrongPassword(password)
-  if (!passwordValidation.valid) {
-    errors.push(...passwordValidation.errors)
+  if (password.trim().length === 0) {
+    errors.push('Senha e obrigatoria.')
   }
 
   if (errors.length > 0) {
