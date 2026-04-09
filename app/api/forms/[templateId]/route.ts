@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
-import { normalizeCnpj, isValidCnpjFormat } from '@/lib/auth/cnpj'
 import type { FormTemplateSchema } from '@/lib/forms/parser'
 
 type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR'
@@ -29,29 +28,19 @@ export async function GET(
       return errorResponse(422, 'VALIDATION_ERROR', 'templateId obrigatorio.')
     }
 
-    const url = new URL(request.url)
-    const cnpj = normalizeCnpj(url.searchParams.get('cnpj') ?? '')
-    if (!isValidCnpjFormat(cnpj)) {
-      return errorResponse(422, 'VALIDATION_ERROR', 'CNPJ invalido.')
-    }
-
     const admin = getSupabaseAdminClient()
     const { data, error } = await admin
       .from('company_form_templates')
       .select(
         `
         id,
-        company_id,
         template_name,
         schema_json,
-        status,
-        companies!inner(cnpj, status)
+        status
       `
       )
       .eq('id', templateId)
       .eq('status', 'active')
-      .eq('companies.cnpj', cnpj)
-      .eq('companies.status', 'active')
       .maybeSingle()
 
     if (error || !data?.id) {
@@ -68,8 +57,6 @@ export async function GET(
         ok: true,
         data: {
           id: data.id,
-          companyId: data.company_id,
-          companyCnpj: cnpj,
           templateName: data.template_name,
           schema,
         },
@@ -81,4 +68,3 @@ export async function GET(
     return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao carregar template.', details)
   }
 }
-

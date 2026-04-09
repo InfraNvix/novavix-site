@@ -62,13 +62,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     const formData = await request.formData()
-    const companyId = asText(formData.get('companyId'))
     const templateName = asText(formData.get('templateName'))
     const file = formData.get('file')
 
-    if (!companyId) {
-      return errorResponse(422, 'VALIDATION_ERROR', 'companyId e obrigatorio.')
-    }
     if (templateName.length < 3) {
       return errorResponse(422, 'VALIDATION_ERROR', 'templateName deve ter ao menos 3 caracteres.')
     }
@@ -85,16 +81,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     const admin = getSupabaseAdminClient()
-    const { data: company } = await admin
-      .from('companies')
-      .select('id, cnpj, nome_fantasia, razao_social')
-      .eq('id', companyId)
-      .maybeSingle()
-
-    if (!company?.id) {
-      return errorResponse(404, 'DOMAIN_ERROR', 'Empresa nao encontrada.', ['COMPANY_NOT_FOUND'])
-    }
-
     const fileBuffer = Buffer.from(await file.arrayBuffer())
     let schema
     try {
@@ -113,7 +99,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const { data: inserted, error: insertError } = await admin
       .from('company_form_templates')
       .insert({
-        company_id: companyId,
+        company_id: null,
         template_name: templateName,
         source_format: format,
         source_file_name: file.name,
@@ -148,4 +134,3 @@ export async function POST(request: Request): Promise<NextResponse> {
     return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna no upload do formulario.', details)
   }
 }
-

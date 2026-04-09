@@ -14,7 +14,7 @@ type Company = {
 
 type Template = {
   id: string
-  companyId: string
+  companyId: string | null
   templateName: string
   sourceFormat: string
   sourceFileName: string
@@ -36,7 +36,6 @@ export default function AdminSetupClient() {
   const [loading, setLoading] = useState(true)
   const [companies, setCompanies] = useState<Company[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
-  const [companyId, setCompanyId] = useState('')
   const [cnpj, setCnpj] = useState('')
   const [razaoSocial, setRazaoSocial] = useState('')
   const [nomeFantasia, setNomeFantasia] = useState('')
@@ -66,9 +65,6 @@ export default function AdminSetupClient() {
       setCompanies(nextCompanies)
       setTemplates((templatesJson.data?.templates ?? []) as Template[])
 
-      if (!companyId && nextCompanies[0]?.id) {
-        setCompanyId(nextCompanies[0].id)
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar dados do painel.')
     } finally {
@@ -128,17 +124,12 @@ export default function AdminSetupClient() {
     setError(null)
     setSuccess(null)
 
-    if (!companyId) {
-      setError('Selecione uma empresa para upload.')
-      return
-    }
     if (!file) {
       setError('Selecione o arquivo do formulario.')
       return
     }
 
     const formData = new FormData()
-    formData.set('companyId', companyId)
     formData.set('templateName', templateName)
     formData.set('file', file)
 
@@ -227,19 +218,6 @@ export default function AdminSetupClient() {
           <article className="bg-white border border-slate-200 rounded-2xl p-5">
             <h2 className="text-lg font-black text-slate-900">2. Subir Arquivo de Formulario</h2>
             <form className="mt-4 space-y-3" onSubmit={handleUploadTemplate}>
-              <select
-                value={companyId}
-                onChange={(event) => setCompanyId(event.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
-                required
-              >
-                <option value="">Selecione a empresa</option>
-                {companies.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.nomeFantasia ?? company.razaoSocial} - {company.cnpj}
-                  </option>
-                ))}
-              </select>
               <input
                 value={templateName}
                 onChange={(event) => setTemplateName(event.target.value)}
@@ -254,7 +232,9 @@ export default function AdminSetupClient() {
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
                 required
               />
-              <p className="text-xs text-slate-500">Formatos suportados: JSON, CSV e XLSX (max 5MB).</p>
+              <p className="text-xs text-slate-500">
+                Template global: sera usado por qualquer empresa. Formatos suportados: JSON, CSV e XLSX (max 5MB).
+              </p>
               <button type="submit" className="w-full py-3 rounded-xl bg-slate-900 text-white text-sm font-bold">
                 Enviar template
               </button>
@@ -316,23 +296,17 @@ export default function AdminSetupClient() {
                 </thead>
                 <tbody>
                   {templates.map((template) => {
-                    const company = companiesById.get(template.companyId)
+                    const company = template.companyId ? companiesById.get(template.companyId) : undefined
                     return (
                       <tr key={template.id} className="border-t border-slate-100">
                         <td className="px-3 py-3 font-semibold text-slate-900">{template.templateName}</td>
                         <td className="px-3 py-3 text-slate-700">
-                          {company?.nomeFantasia ?? company?.razaoSocial ?? template.companyId}
+                          {company?.nomeFantasia ?? company?.razaoSocial ?? (template.companyId ? template.companyId : 'Global')}
                         </td>
                         <td className="px-3 py-3 text-slate-700 uppercase">{template.sourceFormat}</td>
                         <td className="px-3 py-3 text-slate-700">{template.sourceFileName}</td>
                         <td className="px-3 py-3 text-slate-700">
-                          {company ? (
-                            <code className="text-xs break-all">
-                              {`/formularios/${template.id}?cnpj=${company.cnpj}`}
-                            </code>
-                          ) : (
-                            <span className="text-xs text-slate-400">-</span>
-                          )}
+                          <code className="text-xs break-all">{`/formularios/${template.id}`}</code>
                         </td>
                         <td className="px-3 py-3 text-slate-700">{template.status}</td>
                         <td className="px-3 py-3 text-slate-700">{formatDate(template.createdAt)}</td>

@@ -49,10 +49,15 @@ export async function POST(
     const cnpj = normalizeCnpj(asTrimmed(payload.cnpj))
     const respondentName = asTrimmed(payload.respondentName)
     const respondentEmail = asTrimmed(payload.respondentEmail).toLowerCase()
+    const collaboratorId = asTrimmed(payload.collaboratorId)
+    const collaboratorExternalEmployeeId = asTrimmed(payload.collaboratorExternalEmployeeId)
     const answersRaw = payload.answers
 
     if (!isValidCnpjFormat(cnpj)) {
       return errorResponse(422, 'VALIDATION_ERROR', 'CNPJ invalido.')
+    }
+    if (!collaboratorId && !collaboratorExternalEmployeeId) {
+      return errorResponse(422, 'VALIDATION_ERROR', 'Selecione o colaborador.')
     }
     if (!answersRaw || typeof answersRaw !== 'object' || Array.isArray(answersRaw)) {
       return errorResponse(422, 'VALIDATION_ERROR', 'answers deve ser um objeto.')
@@ -67,21 +72,17 @@ export async function POST(
       .select(
         `
         id,
-        company_id,
         template_name,
         schema_json,
-        status,
-        companies!inner(cnpj, status)
+        status
       `
       )
       .eq('id', templateId)
       .eq('status', 'active')
-      .eq('companies.cnpj', cnpj)
-      .eq('companies.status', 'active')
       .maybeSingle()
 
     if (templateError || !templateData?.id) {
-      return errorResponse(404, 'NOT_FOUND', 'Template nao encontrado para este CNPJ.')
+      return errorResponse(404, 'NOT_FOUND', 'Template nao encontrado.')
     }
 
     const schema = templateData.schema_json as FormTemplateSchema
@@ -94,12 +95,42 @@ export async function POST(
       return errorResponse(422, 'VALIDATION_ERROR', 'Respostas invalidas.', validated.errors)
     }
 
+    const { data: company, error: companyError } = await admin
+      .from('companies')
+      .select('id, cnpj, status')
+      .eq('cnpj', cnpj)
+      .eq('status', 'active')
+      .maybeSingle()
+
+    if (companyError || !company?.id) {
+      return errorResponse(404, 'NOT_FOUND', 'Empresa nao encontrada para este CNPJ.')
+    }
+
+    let collaboratorQuery = admin
+      .from('copsoq_collaborators')
+      .select('id, external_employee_id, full_name, is_active, company_id')
+      .eq('company_id', company.id)
+
+    if (collaboratorId) {
+      collaboratorQuery = collaboratorQuery.eq('id', collaboratorId)
+    } else {
+      collaboratorQuery = collaboratorQuery.eq('external_employee_id', collaboratorExternalEmployeeId)
+    }
+
+    const { data: collaborator, error: collaboratorError } = await collaboratorQuery.maybeSingle()
+    if (collaboratorError || !collaborator?.id || !collaborator.is_active) {
+      return errorResponse(404, 'NOT_FOUND', 'Colaborador nao encontrado.')
+    }
+
     const { data: inserted, error: insertError } = await admin
       .from('company_form_submissions')
       .insert({
         template_id: templateData.id,
-        company_id: templateData.company_id,
-        respondent_name: respondentName || null,
+        company_id: company.id,
+        collaborator_id: collaborator.id,
+        collaborator_external_employee_id: collaborator.external_employee_id ?? null,
+        collaborator_name: collaborator.full_name ?? null,
+        respondent_name: respondentName || collaborator.full_name || null,
         respondent_email: respondentEmail || null,
         answers_json: validated.normalizedAnswers,
       })
@@ -126,4 +157,3 @@ export async function POST(
     return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao enviar formulario.', details)
   }
 }
-

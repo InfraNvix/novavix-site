@@ -1,24 +1,23 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import type { FormFieldSchema, FormTemplateSchema } from '@/lib/forms/parser'
 
 type TemplateResponse = {
   id: string
-  companyId: string
-  companyCnpj: string
   templateName: string
   schema: FormTemplateSchema
 }
 
+type Collaborator = {
+  id: string
+  externalEmployeeId: string | null
+  fullName: string | null
+}
+
 type LoadState = 'loading' | 'ready' | 'error'
 type SubmitState = 'idle' | 'submitting' | 'success' | 'error'
-
-function getCnpjFromLocation(): string {
-  if (typeof window === 'undefined') return ''
-  return (new URLSearchParams(window.location.search).get('cnpj') ?? '').trim()
-}
 
 function toInputType(field: FormFieldSchema): string {
   if (field.type === 'number') return 'number'
@@ -31,22 +30,19 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
   const [submitState, setSubmitState] = useState<SubmitState>('idle')
   const [error, setError] = useState<string | null>(null)
   const [template, setTemplate] = useState<TemplateResponse | null>(null)
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([])
+  const [collaboratorId, setCollaboratorId] = useState('')
+  const [collaboratorLoading, setCollaboratorLoading] = useState(false)
+  const [collaboratorMessage, setCollaboratorMessage] = useState<string | null>(null)
+  const [cnpj, setCnpj] = useState('')
   const [respondentName, setRespondentName] = useState('')
   const [respondentEmail, setRespondentEmail] = useState('')
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({})
 
-  const cnpj = useMemo(() => getCnpjFromLocation(), [])
-
   useEffect(() => {
     const run = async () => {
-      if (!cnpj) {
-        setLoadState('error')
-        setError('CNPJ nao informado na URL. Use ?cnpj=XXXXXXXXXXXXXX')
-        return
-      }
-
       try {
-        const response = await fetch(`/api/forms/${templateId}?cnpj=${encodeURIComponent(cnpj)}`)
+        const response = await fetch(`/api/forms/${templateId}`)
         const json = await response.json()
         if (!response.ok || !json.ok) {
           throw new Error(json?.error?.message ?? 'Falha ao carregar formulario.')
@@ -66,7 +62,43 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
       }
     }
     void run()
-  }, [cnpj, templateId])
+  }, [templateId])
+
+  useEffect(() => {
+    setCollaborators([])
+    setCollaboratorId('')
+    setCollaboratorMessage(null)
+  }, [cnpj])
+
+  async function handleLoadCollaborators(): Promise<void> {
+    setCollaboratorLoading(true)
+    setCollaboratorMessage(null)
+    setError(null)
+    try {
+      if (!cnpj) {
+        throw new Error('Informe o CNPJ para carregar os colaboradores.')
+      }
+      const response = await fetch(`/api/forms/collaborators?cnpj=${encodeURIComponent(cnpj)}`)
+      const json = await response.json()
+      if (!response.ok || !json.ok) {
+        throw new Error(json?.error?.message ?? 'Falha ao carregar colaboradores.')
+      }
+
+      const list = (json.data?.collaborators ?? []) as Collaborator[]
+      setCollaborators(list)
+      setCollaboratorId('')
+      if (list.length === 0) {
+        setCollaboratorMessage('Nenhum colaborador ativo encontrado para este CNPJ.')
+      }
+    } catch (err) {
+      setCollaborators([])
+      setCollaboratorId('')
+      setCollaboratorMessage(null)
+      setError(err instanceof Error ? err.message : 'Falha ao carregar colaboradores.')
+    } finally {
+      setCollaboratorLoading(false)
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
@@ -75,11 +107,19 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
     setError(null)
 
     try {
+      if (!cnpj) {
+        throw new Error('Informe o CNPJ antes de enviar.')
+      }
+      if (!collaboratorId) {
+        throw new Error('Selecione o colaborador.')
+      }
+
       const response = await fetch(`/api/forms/${template.id}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cnpj,
+          collaboratorId,
           respondentName,
           respondentEmail,
           answers,
@@ -125,7 +165,7 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
       <section className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-2xl p-6">
         <p className="text-xs uppercase tracking-widest font-black text-blue-700">Formulario Dinamico</p>
         <h1 className="text-2xl font-black text-slate-900 mt-2">{template.schema.title || template.templateName}</h1>
-        <p className="text-sm text-slate-600 mt-2">Empresa CNPJ: {template.companyCnpj}</p>
+        <p className="text-sm text-slate-600 mt-2">Preencha o CNPJ e selecione o colaborador.</p>
 
         {error ? <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div> : null}
         {submitState === 'success' ? (
@@ -135,6 +175,49 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
         ) : null}
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+            <div className="flex flex-col gap-2">
+              <label className="text-[11px] font-black uppercase tracking-widest text-slate-600">CNPJ</label>
+              <div className="flex flex-col md:flex-row gap-2">
+                <input
+                  value={cnpj}
+                  onChange={(event) => setCnpj(event.target.value)}
+                  placeholder="Digite o CNPJ da empresa"
+                  className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={handleLoadCollaborators}
+                  disabled={collaboratorLoading}
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold disabled:opacity-60"
+                >
+                  {collaboratorLoading ? 'Buscando...' : 'Buscar colaboradores'}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-black uppercase tracking-widest text-slate-600 mb-2 block">
+                Colaborador
+              </label>
+              <select
+                value={collaboratorId}
+                onChange={(event) => setCollaboratorId(event.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm"
+                required
+              >
+                <option value="">Selecione o colaborador</option>
+                {collaborators.map((collaborator) => (
+                  <option key={collaborator.id} value={collaborator.id}>
+                    {collaborator.fullName ?? 'Sem nome'}
+                    {collaborator.externalEmployeeId ? ` - ${collaborator.externalEmployeeId}` : ''}
+                  </option>
+                ))}
+              </select>
+              {collaboratorMessage ? <p className="text-xs text-slate-500 mt-2">{collaboratorMessage}</p> : null}
+            </div>
+          </div>
+
           <input
             value={respondentName}
             onChange={(event) => setRespondentName(event.target.value)}
@@ -203,4 +286,3 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
     </main>
   )
 }
-
