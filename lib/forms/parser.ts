@@ -288,6 +288,7 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
       const fields: FormFieldSchema[] = []
       let sectionIndex = 1
       const seenLabels = new Set<string>()
+      const seenSections = new Set<string>()
 
       for (const row of rowsAfterHeader) {
         const rawValue = row[0] ?? ''
@@ -296,6 +297,11 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
           continue
         }
         if (isSectionRow(value, row)) {
+          const sectionKey = normalizeText(value)
+          if (seenSections.has(sectionKey)) {
+            continue
+          }
+          seenSections.add(sectionKey)
           fields.push({
             key: `section_${sectionIndex}`,
             label: safeLabel(value),
