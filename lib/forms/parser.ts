@@ -252,6 +252,18 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
   const headerRow = normalizedRows[firstNonEmptyRowIndex]
   const headerLabels = headerRow.filter((cell) => cell.length > 0)
   const likertOptions = findLikertOptions()
+  const isScaleRow = (row: string[]): boolean => {
+    const normalized = row.map((cell) => normalizeText(cell)).filter((cell) => cell.length > 0)
+    if (normalized.length === 0) return false
+    const hasNumbers = ['1', '2', '3', '4', '5'].every((value) => normalized.includes(value))
+    if (hasNumbers) return true
+    const joined = normalized.join(' ')
+    if (joined.includes('1') && joined.includes('2') && joined.includes('3') && joined.includes('4') && joined.includes('5')) {
+      return true
+    }
+    return false
+  }
+
   const isSectionRow = (value: string, row: string[]): boolean => {
     const raw = value.replace(/\s+/g, ' ').trim()
     if (!raw) return false
@@ -262,8 +274,7 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
     const normalized = normalizeText(raw)
     if (raw.endsWith('...') || raw.includes('...')) return true
     if (raw.endsWith(':')) return true
-    const rowHasScaleNumbers = ['1', '2', '3', '4', '5'].every((value) => row.includes(value))
-    if (rowHasScaleNumbers) return true
+    if (isScaleRow(row)) return true
     if (raw.length >= 90) return true
     if (normalized.includes('referem-se') || normalized.includes('referem se')) return true
     if (normalized.includes('as proximas')) return true
@@ -294,6 +305,9 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
         const rawValue = row[0] ?? ''
         const value = String(rawValue).trim()
         if (!value) {
+          continue
+        }
+        if (isScaleRow(row)) {
           continue
         }
         if (isSectionRow(value, row)) {
