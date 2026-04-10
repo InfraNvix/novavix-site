@@ -181,12 +181,6 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
       'indique',
       '(x)',
       'escala',
-      'as proximas',
-      'as próximas',
-      'referem-se',
-      'referem se',
-      'modo como',
-      'afeta a sua vida',
       'obrigado pela sua colaboracao',
       'obrigado pela sua colaboração',
       'agradecemos',
@@ -256,11 +250,18 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
     if (text.endsWith('?')) return false
     if (/^\d+\s*[-.]/.test(text)) return false
     if (/^\d+\s/.test(text)) return false
+    if (text.endsWith('...') || text.includes('...')) return true
     const rowHasScaleNumbers = ['1', '2', '3', '4', '5'].every((value) => row.includes(value))
     if (rowHasScaleNumbers) return true
     if (text.length >= 90) return true
-    if (text.toLowerCase().includes('referem-se') || text.toLowerCase().includes('referem se')) return true
-    if (text.toLowerCase().includes('as proximas') || text.toLowerCase().includes('as próximas')) return true
+    const lower = text.toLowerCase()
+    if (lower.includes('referem-se') || lower.includes('referem se')) return true
+    if (lower.includes('as proximas') || lower.includes('as próximas')) return true
+    if (lower.includes('com que frequencia') || lower.includes('com que frequência')) return true
+    if (lower.includes('em relacao a sua chefia') || lower.includes('em relação a sua chefia')) return true
+    if (lower.includes('nos ultimos') || lower.includes('nos últimos')) return true
+    if (lower.includes('das seguintes afirmacoes') || lower.includes('das seguintes afirmações')) return true
+    if (lower.includes('modo como') && lower.includes('afeta')) return true
     return false
   }
 
@@ -283,9 +284,6 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
         if (!value) {
           continue
         }
-        if (shouldIgnoreRow(value)) {
-          continue
-        }
         if (isSectionRow(value, row)) {
           fields.push({
             key: `section_${sectionIndex}`,
@@ -294,6 +292,9 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
             required: false,
           })
           sectionIndex += 1
+          continue
+        }
+        if (shouldIgnoreRow(value)) {
           continue
         }
         const labelKey = normalizeKey(value)
