@@ -45,6 +45,7 @@ export default function AdminSetupClient() {
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   async function loadData(): Promise<void> {
     setLoading(true)
@@ -150,6 +151,31 @@ export default function AdminSetupClient() {
       await loadData()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao subir formulario.')
+    }
+  }
+
+  async function handleDeleteTemplate(template: Template): Promise<void> {
+    const confirmed = window.confirm(`Excluir o template "${template.templateName}"? Essa acao nao pode ser desfeita.`)
+    if (!confirmed) return
+
+    setDeletingId(template.id)
+    setError(null)
+    setSuccess(null)
+    try {
+      const response = await fetch(`/api/admin/forms?templateId=${encodeURIComponent(template.id)}`, {
+        method: 'DELETE',
+      })
+      const json = await response.json()
+      if (!response.ok || !json.ok) {
+        const details = Array.isArray(json?.error?.details) ? json.error.details.join(' | ') : null
+        throw new Error(details || json?.error?.message || 'Falha ao excluir template.')
+      }
+      setSuccess('Template excluido com sucesso.')
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao excluir template.')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -291,6 +317,7 @@ export default function AdminSetupClient() {
                     <th className="text-left px-3 py-2">Arquivo</th>
                     <th className="text-left px-3 py-2">Link Publico</th>
                     <th className="text-left px-3 py-2">HTML</th>
+                    <th className="text-left px-3 py-2">Excluir</th>
                     <th className="text-left px-3 py-2">Status</th>
                     <th className="text-left px-3 py-2">Enviado em</th>
                   </tr>
@@ -313,6 +340,16 @@ export default function AdminSetupClient() {
                           <Link href={`/api/forms/${template.id}/html`} className="text-xs font-bold text-blue-700">
                             Ver HTML
                           </Link>
+                        </td>
+                        <td className="px-3 py-3 text-slate-700">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTemplate(template)}
+                            disabled={deletingId === template.id}
+                            className="text-xs font-bold text-rose-600 disabled:opacity-60"
+                          >
+                            {deletingId === template.id ? 'Excluindo...' : 'Excluir'}
+                          </button>
                         </td>
                         <td className="px-3 py-3 text-slate-700">{template.status}</td>
                         <td className="px-3 py-3 text-slate-700">{formatDate(template.createdAt)}</td>

@@ -20,6 +20,14 @@ function renderField(field: FormFieldSchema): string {
   const required = field.required ? 'required' : ''
   const name = escapeHtml(field.key)
 
+  if (field.type === 'section') {
+    return `
+      <div class="section">
+        <h2>${label}</h2>
+      </div>
+    `
+  }
+
   if (field.type === 'select') {
     const options = (field.options ?? [])
       .map((opt) => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`)
@@ -116,6 +124,13 @@ export function renderTemplateHtml(schema: FormTemplateSchema, templateName: str
         border-radius: 10px;
         border: 1px solid #e2e8f0;
         background: #f8fafc;
+      }
+      .section h2 {
+        margin: 8px 0 0;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #64748b;
       }
       .checkbox {
         display: flex;
