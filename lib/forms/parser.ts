@@ -168,6 +168,34 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
     .map((row) => (Array.isArray(row) ? row.map((cell) => String(cell ?? '').trim()) : []))
     .filter((row) => row.length > 0)
 
+  const findLikertOptions = (): string[] | null => {
+    for (const row of normalizedRows) {
+      const cells = row.map((cell) => cell.replace(/\s+/g, ' ').trim()).filter((cell) => cell.length > 0)
+      if (cells.length === 0) continue
+
+      const hasNumbers = ['1', '2', '3', '4', '5'].every((value) => cells.includes(value))
+      if (hasNumbers) {
+        return ['1', '2', '3', '4', '5']
+      }
+
+      const joined = cells.join(' ')
+      if (joined.includes('1') && joined.includes('2') && joined.includes('3') && joined.includes('4') && joined.includes('5')) {
+        const matches = Array.from(
+          joined.matchAll(/([1-5])\s*[-:]\s*([^1-5]{2,}?)(?=\s+[1-5]\s*[-:]|$)/g)
+        )
+        if (matches.length > 0) {
+          const options = matches
+            .map((match) => `${match[1]} - ${match[2].trim()}`)
+            .filter((option) => option.length > 0)
+          if (options.length >= 2) {
+            return options
+          }
+        }
+      }
+    }
+    return null
+  }
+
   if (normalizedRows.length === 0) {
     throw new Error('FORM_XLSX_HEADER_EMPTY')
   }
@@ -179,6 +207,7 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
 
   const headerRow = normalizedRows[firstNonEmptyRowIndex]
   const headerLabels = headerRow.filter((cell) => cell.length > 0)
+  const likertOptions = findLikertOptions()
 
   // If there is only one header and many rows below, treat the first column as question list.
   if (headerLabels.length === 1) {
@@ -193,8 +222,9 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
       const fields: FormFieldSchema[] = questionRows.map((label) => ({
         key: normalizeKey(label),
         label: safeLabel(label),
-        type: 'text',
+        type: likertOptions ? 'select' : 'text',
         required: false,
+        options: likertOptions ?? undefined,
       }))
 
       return {
@@ -207,8 +237,9 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
   const fields: FormFieldSchema[] = headerLabels.map((label) => ({
     key: normalizeKey(label),
     label: safeLabel(label),
-    type: 'text',
+    type: likertOptions ? 'select' : 'text',
     required: false,
+    options: likertOptions ?? undefined,
   }))
 
   if (fields.length === 0) {

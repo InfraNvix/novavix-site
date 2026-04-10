@@ -59,7 +59,7 @@ function renderField(field: FormFieldSchema): string {
 }
 
 export function renderTemplateHtml(schema: FormTemplateSchema, templateName: string): string {
-  const title = escapeHtml(schema.title || templateName || 'Formulario')
+  const title = escapeHtml(templateName || schema.title || 'Formulario')
   const fields = schema.fields.map(renderField).join('\n')
 
   return `<!doctype html>
@@ -138,7 +138,6 @@ export function renderTemplateHtml(schema: FormTemplateSchema, templateName: str
   <body>
     <main class="card">
       <h1>${title}</h1>
-      <p class="subtitle">Formulario gerado automaticamente a partir da planilha.</p>
       <form>
         ${fields}
         <button type="submit">Enviar</button>
