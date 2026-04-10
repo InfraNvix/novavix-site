@@ -249,13 +249,15 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
   const headerRow = normalizedRows[firstNonEmptyRowIndex]
   const headerLabels = headerRow.filter((cell) => cell.length > 0)
   const likertOptions = findLikertOptions()
-  const isSectionRow = (value: string): boolean => {
+  const isSectionRow = (value: string, row: string[]): boolean => {
     const text = value.replace(/\s+/g, ' ').trim()
     if (!text) return false
     if (text.length < 12) return false
     if (text.endsWith('?')) return false
     if (/^\d+\s*[-.]/.test(text)) return false
     if (/^\d+\s/.test(text)) return false
+    const rowHasScaleNumbers = ['1', '2', '3', '4', '5'].every((value) => row.includes(value))
+    if (rowHasScaleNumbers) return true
     if (text.length >= 90) return true
     if (text.toLowerCase().includes('referem-se') || text.toLowerCase().includes('referem se')) return true
     if (text.toLowerCase().includes('as proximas') || text.toLowerCase().includes('as próximas')) return true
@@ -267,19 +269,24 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
     const titleCandidate = headerLabels[0]
     const rowsAfterHeader = normalizedRows
       .slice(firstNonEmptyRowIndex + 1)
-      .map((row) => row[0] ?? '')
-      .map((value) => String(value).trim())
-      .filter((value) => value.length > 0)
+      .map((row) => row.map((cell) => String(cell).trim()))
+      .filter((row) => row.some((cell) => cell.length > 0))
 
     if (rowsAfterHeader.length >= 2) {
       const fields: FormFieldSchema[] = []
       let sectionIndex = 1
+      const seenLabels = new Set<string>()
 
-      for (const value of rowsAfterHeader) {
+      for (const row of rowsAfterHeader) {
+        const rawValue = row[0] ?? ''
+        const value = String(rawValue).trim()
+        if (!value) {
+          continue
+        }
         if (shouldIgnoreRow(value)) {
           continue
         }
-        if (isSectionRow(value)) {
+        if (isSectionRow(value, row)) {
           fields.push({
             key: `section_${sectionIndex}`,
             label: safeLabel(value),
@@ -289,8 +296,13 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
           sectionIndex += 1
           continue
         }
+        const labelKey = normalizeKey(value)
+        if (seenLabels.has(labelKey)) {
+          continue
+        }
+        seenLabels.add(labelKey)
         fields.push({
-          key: normalizeKey(value),
+          key: labelKey,
           label: safeLabel(value),
           type: likertOptions ? 'select' : 'text',
           required: true,
