@@ -290,6 +290,7 @@ export default function AdminSetupClient() {
                     <th className="text-left px-3 py-2">Formato</th>
                     <th className="text-left px-3 py-2">Arquivo</th>
                     <th className="text-left px-3 py-2">Link Publico</th>
+                    <th className="text-left px-3 py-2">HTML</th>
                     <th className="text-left px-3 py-2">Status</th>
                     <th className="text-left px-3 py-2">Enviado em</th>
                   </tr>
@@ -307,6 +308,11 @@ export default function AdminSetupClient() {
                         <td className="px-3 py-3 text-slate-700">{template.sourceFileName}</td>
                         <td className="px-3 py-3 text-slate-700">
                           <code className="text-xs break-all">{`/formularios/${template.id}`}</code>
+                        </td>
+                        <td className="px-3 py-3 text-slate-700">
+                          <Link href={`/api/forms/${template.id}/html`} className="text-xs font-bold text-blue-700">
+                            Ver HTML
+                          </Link>
                         </td>
                         <td className="px-3 py-3 text-slate-700">{template.status}</td>
                         <td className="px-3 py-3 text-slate-700">{formatDate(template.createdAt)}</td>
