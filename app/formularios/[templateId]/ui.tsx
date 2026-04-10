@@ -52,7 +52,9 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
         setTemplate(data)
         const initialAnswers: Record<string, string | boolean> = {}
         for (const field of data.schema.fields) {
-          initialAnswers[field.key] = field.type === 'boolean' ? false : ''
+          if (field.type !== 'section') {
+            initialAnswers[field.key] = field.type === 'boolean' ? false : ''
+          }
         }
         setAnswers(initialAnswers)
         setLoadState('ready')
@@ -243,47 +245,57 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
             className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
           />
 
-          {template.schema.fields.map((field) => (
-            <div key={field.key}>
-              <label className="block text-[11px] font-black uppercase tracking-widest text-slate-600 mb-2">
-                {field.label}
-                {field.required ? ' *' : ''}
-              </label>
+          {template.schema.fields.map((field) => {
+            if (field.type === 'section') {
+              return (
+                <div key={field.key} className="pt-4">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-500">{field.label}</p>
+                </div>
+              )
+            }
 
-              {field.type === 'select' ? (
-                <select
-                  value={String(answers[field.key] ?? '')}
-                  onChange={(event) => setAnswers((prev) => ({ ...prev, [field.key]: event.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
-                  required={field.required}
-                >
-                  <option value="">Selecione</option>
-                  {(field.options ?? []).map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              ) : field.type === 'boolean' ? (
-                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(answers[field.key])}
-                    onChange={(event) => setAnswers((prev) => ({ ...prev, [field.key]: event.target.checked }))}
-                  />
-                  Sim
+            return (
+              <div key={field.key}>
+                <label className="block text-[11px] font-black uppercase tracking-widest text-slate-600 mb-2">
+                  {field.label}
+                  {field.required ? ' *' : ''}
                 </label>
-              ) : (
-                <input
-                  type={toInputType(field)}
-                  value={String(answers[field.key] ?? '')}
-                  onChange={(event) => setAnswers((prev) => ({ ...prev, [field.key]: event.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
-                  required={field.required}
-                />
-              )}
-            </div>
-          ))}
+
+                {field.type === 'select' ? (
+                  <select
+                    value={String(answers[field.key] ?? '')}
+                    onChange={(event) => setAnswers((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
+                    required={field.required}
+                  >
+                    <option value="">Selecione</option>
+                    {(field.options ?? []).map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                ) : field.type === 'boolean' ? (
+                  <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(answers[field.key])}
+                      onChange={(event) => setAnswers((prev) => ({ ...prev, [field.key]: event.target.checked }))}
+                    />
+                    Sim
+                  </label>
+                ) : (
+                  <input
+                    type={toInputType(field)}
+                    value={String(answers[field.key] ?? '')}
+                    onChange={(event) => setAnswers((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
+                    required={field.required}
+                  />
+                )}
+              </div>
+            )
+          })}
 
           <button
             type="submit"

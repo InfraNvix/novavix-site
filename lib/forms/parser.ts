@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx'
 
-export type FormFieldType = 'text' | 'number' | 'select' | 'date' | 'boolean'
+export type FormFieldType = 'text' | 'number' | 'select' | 'date' | 'boolean' | 'section'
 
 export type FormFieldSchema = {
   key: string
@@ -181,6 +181,12 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
       'indique',
       '(x)',
       'escala',
+      'as proximas',
+      'as próximas',
+      'referem-se',
+      'referem se',
+      'modo como',
+      'afeta a sua vida',
       'obrigado pela sua colaboracao',
       'obrigado pela sua colaboração',
       'agradecemos',
@@ -243,25 +249,54 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
   const headerRow = normalizedRows[firstNonEmptyRowIndex]
   const headerLabels = headerRow.filter((cell) => cell.length > 0)
   const likertOptions = findLikertOptions()
+  const isSectionRow = (value: string): boolean => {
+    const text = value.replace(/\s+/g, ' ').trim()
+    if (!text) return false
+    if (text.length < 12) return false
+    if (text.endsWith('?')) return false
+    if (/^\d+\s*[-.]/.test(text)) return false
+    if (/^\d+\s/.test(text)) return false
+    if (text.length >= 90) return true
+    if (text.toLowerCase().includes('referem-se') || text.toLowerCase().includes('referem se')) return true
+    if (text.toLowerCase().includes('as proximas') || text.toLowerCase().includes('as próximas')) return true
+    return false
+  }
 
   // If there is only one header and many rows below, treat the first column as question list.
   if (headerLabels.length === 1) {
     const titleCandidate = headerLabels[0]
-    const questionRows = normalizedRows
+    const rowsAfterHeader = normalizedRows
       .slice(firstNonEmptyRowIndex + 1)
       .map((row) => row[0] ?? '')
       .map((value) => String(value).trim())
       .filter((value) => value.length > 0)
-      .filter((value) => !shouldIgnoreRow(value))
 
-    if (questionRows.length >= 2) {
-      const fields: FormFieldSchema[] = questionRows.map((label) => ({
-        key: normalizeKey(label),
-        label: safeLabel(label),
-        type: likertOptions ? 'select' : 'text',
-        required: true,
-        options: likertOptions ?? undefined,
-      }))
+    if (rowsAfterHeader.length >= 2) {
+      const fields: FormFieldSchema[] = []
+      let sectionIndex = 1
+
+      for (const value of rowsAfterHeader) {
+        if (shouldIgnoreRow(value)) {
+          continue
+        }
+        if (isSectionRow(value)) {
+          fields.push({
+            key: `section_${sectionIndex}`,
+            label: safeLabel(value),
+            type: 'section',
+            required: false,
+          })
+          sectionIndex += 1
+          continue
+        }
+        fields.push({
+          key: normalizeKey(value),
+          label: safeLabel(value),
+          type: likertOptions ? 'select' : 'text',
+          required: true,
+          options: likertOptions ?? undefined,
+        })
+      }
 
       return {
         title: titleCandidate || templateName,
