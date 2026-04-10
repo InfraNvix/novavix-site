@@ -38,6 +38,7 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
   const [respondentName, setRespondentName] = useState('')
   const [respondentEmail, setRespondentEmail] = useState('')
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({})
+  const [finalized, setFinalized] = useState(false)
 
   useEffect(() => {
     const run = async () => {
@@ -170,7 +171,7 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
         <p className="text-sm text-slate-600 mt-2">Preencha o CNPJ e selecione o colaborador.</p>
 
         {error ? <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div> : null}
-        {submitState === 'success' ? (
+        {finalized ? (
           <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-700">
             <div className="flex items-center gap-3">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
@@ -180,8 +181,8 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
                 </svg>
               </span>
               <div>
-                <p className="text-sm font-bold">Enviado</p>
-                <p className="text-xs text-emerald-700/80">Respostas registradas com sucesso.</p>
+                <p className="text-sm font-bold">Concluido</p>
+                <p className="text-xs text-emerald-700/80">Obrigado por responder o formulario.</p>
               </div>
             </div>
           </div>
@@ -304,6 +305,16 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
           >
             {submitState === 'submitting' ? 'Enviando...' : submitState === 'success' ? 'Enviado' : 'Enviar respostas'}
           </button>
+
+          {submitState === 'success' && !finalized ? (
+            <button
+              type="button"
+              onClick={() => setFinalized(true)}
+              className="w-full py-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-bold"
+            >
+              Finalizar
+            </button>
+          ) : null}
         </form>
       </section>
       <style jsx>{`
