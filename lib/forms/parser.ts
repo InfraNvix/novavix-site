@@ -168,6 +168,30 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
     .map((row) => (Array.isArray(row) ? row.map((cell) => String(cell ?? '').trim()) : []))
     .filter((row) => row.length > 0)
 
+  const shouldIgnoreRow = (value: string): boolean => {
+    const text = value.replace(/\s+/g, ' ').trim().toLowerCase()
+    if (!text) return true
+
+    // Ignore common header/instruction lines in survey sheets.
+    const ignoreTerms = ['copsoq', 'versao', 'tradu', 'adaptacao', 'indique', '(x)', 'escala']
+    if (ignoreTerms.some((term) => text.includes(term))) {
+      return true
+    }
+
+    // Ignore explicit 1-5 scale lines.
+    const hasScaleNumbers = ['1', '2', '3', '4', '5'].every((value) => text.includes(value))
+    if (hasScaleNumbers && text.length < 120) {
+      return true
+    }
+
+    // Ignore lines that are likely citations or metadata.
+    if (text.includes('(') && text.includes(')') && text.length < 120 && !text.endsWith('?')) {
+      return true
+    }
+
+    return false
+  }
+
   const findLikertOptions = (): string[] | null => {
     for (const row of normalizedRows) {
       const cells = row.map((cell) => cell.replace(/\s+/g, ' ').trim()).filter((cell) => cell.length > 0)
@@ -217,6 +241,7 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
       .map((row) => row[0] ?? '')
       .map((value) => String(value).trim())
       .filter((value) => value.length > 0)
+      .filter((value) => !shouldIgnoreRow(value))
 
     if (questionRows.length >= 2) {
       const fields: FormFieldSchema[] = questionRows.map((label) => ({
