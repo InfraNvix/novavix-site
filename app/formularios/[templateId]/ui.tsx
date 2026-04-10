@@ -169,8 +169,19 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
 
         {error ? <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div> : null}
         {submitState === 'success' ? (
-          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-            Respostas enviadas com sucesso. Obrigado.
+          <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-700">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+                <svg className="checkmark" viewBox="0 0 52 52" aria-hidden="true">
+                  <circle className="checkmark-circle" cx="26" cy="26" r="25" fill="none" />
+                  <path className="checkmark-check" fill="none" d="M14 27 l7 7 l17 -17" />
+                </svg>
+              </span>
+              <div>
+                <p className="text-sm font-bold">Enviado</p>
+                <p className="text-xs text-emerald-700/80">Respostas registradas com sucesso.</p>
+              </div>
+            </div>
           </div>
         ) : null}
 
@@ -283,6 +294,38 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
           </button>
         </form>
       </section>
+      <style jsx>{`
+        .checkmark {
+          width: 28px;
+          height: 28px;
+          stroke: #16a34a;
+          stroke-width: 4;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+        .checkmark-circle {
+          stroke: #16a34a;
+          stroke-dasharray: 157;
+          stroke-dashoffset: 157;
+          animation: draw-circle 420ms ease-out forwards;
+        }
+        .checkmark-check {
+          stroke: #16a34a;
+          stroke-dasharray: 50;
+          stroke-dashoffset: 50;
+          animation: draw-check 420ms 180ms ease-out forwards;
+        }
+        @keyframes draw-circle {
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
+        @keyframes draw-check {
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
+      `}</style>
     </main>
   )
 }

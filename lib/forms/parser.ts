@@ -173,7 +173,18 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
     if (!text) return true
 
     // Ignore common header/instruction lines in survey sheets.
-    const ignoreTerms = ['copsoq', 'versao', 'tradu', 'adaptacao', 'indique', '(x)', 'escala']
+    const ignoreTerms = [
+      'copsoq',
+      'versao',
+      'tradu',
+      'adaptacao',
+      'indique',
+      '(x)',
+      'escala',
+      'obrigado pela sua colaboracao',
+      'obrigado pela sua colaboração',
+      'agradecemos',
+    ]
     if (ignoreTerms.some((term) => text.includes(term))) {
       return true
     }
@@ -248,7 +259,7 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
         key: normalizeKey(label),
         label: safeLabel(label),
         type: likertOptions ? 'select' : 'text',
-        required: false,
+        required: true,
         options: likertOptions ?? undefined,
       }))
 
@@ -263,7 +274,7 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
     key: normalizeKey(label),
     label: safeLabel(label),
     type: likertOptions ? 'select' : 'text',
-    required: false,
+    required: true,
     options: likertOptions ?? undefined,
   }))
 
