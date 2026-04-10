@@ -26,6 +26,15 @@ function normalizeKey(value: string): string {
     .slice(0, 80)
 }
 
+function normalizeText(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+}
+
 function safeLabel(value: string): string {
   const v = value.trim()
   return v.length > 0 ? v : 'Campo'
@@ -169,7 +178,7 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
     .filter((row) => row.length > 0)
 
   const shouldIgnoreRow = (value: string): boolean => {
-    const text = value.replace(/\s+/g, ' ').trim().toLowerCase()
+    const text = normalizeText(value)
     if (!text) return true
 
     // Ignore common header/instruction lines in survey sheets.
@@ -244,24 +253,26 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
   const headerLabels = headerRow.filter((cell) => cell.length > 0)
   const likertOptions = findLikertOptions()
   const isSectionRow = (value: string, row: string[]): boolean => {
-    const text = value.replace(/\s+/g, ' ').trim()
-    if (!text) return false
-    if (text.length < 12) return false
-    if (text.endsWith('?')) return false
-    if (/^\d+\s*[-.]/.test(text)) return false
-    if (/^\d+\s/.test(text)) return false
-    if (text.endsWith('...') || text.includes('...')) return true
+    const raw = value.replace(/\s+/g, ' ').trim()
+    if (!raw) return false
+    if (raw.length < 12) return false
+    if (raw.endsWith('?')) return false
+    if (/^\d+\s*[-.]/.test(raw)) return false
+    if (/^\d+\s/.test(raw)) return false
+    const normalized = normalizeText(raw)
+    if (raw.endsWith('...') || raw.includes('...')) return true
+    if (raw.endsWith(':')) return true
     const rowHasScaleNumbers = ['1', '2', '3', '4', '5'].every((value) => row.includes(value))
     if (rowHasScaleNumbers) return true
-    if (text.length >= 90) return true
-    const lower = text.toLowerCase()
-    if (lower.includes('referem-se') || lower.includes('referem se')) return true
-    if (lower.includes('as proximas') || lower.includes('as próximas')) return true
-    if (lower.includes('com que frequencia') || lower.includes('com que frequência')) return true
-    if (lower.includes('em relacao a sua chefia') || lower.includes('em relação a sua chefia')) return true
-    if (lower.includes('nos ultimos') || lower.includes('nos últimos')) return true
-    if (lower.includes('das seguintes afirmacoes') || lower.includes('das seguintes afirmações')) return true
-    if (lower.includes('modo como') && lower.includes('afeta')) return true
+    if (raw.length >= 90) return true
+    if (normalized.includes('referem-se') || normalized.includes('referem se')) return true
+    if (normalized.includes('as proximas')) return true
+    if (normalized.includes('com que frequencia')) return true
+    if (normalized.includes('em relacao a sua chefia')) return true
+    if (normalized.includes('nos ultimos')) return true
+    if (normalized.includes('das seguintes afirmacoes')) return true
+    if (normalized.includes('modo como') && normalized.includes('afeta')) return true
+    if (normalized.includes('durante as ultimas') && normalized.includes('semanas')) return true
     return false
   }
 
