@@ -159,22 +159,61 @@ export function parseXlsxTemplate(fileBuffer: Buffer, templateName: string): For
   }
 
   const sheet = workbook.Sheets[firstSheet]
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
-    defval: null,
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
+    defval: '',
   })
 
-  const header = rows.length > 0 ? Object.keys(rows[0]) : []
-  if (header.length === 0) {
+  const normalizedRows = rows
+    .map((row) => (Array.isArray(row) ? row.map((cell) => String(cell ?? '').trim()) : []))
+    .filter((row) => row.length > 0)
+
+  if (normalizedRows.length === 0) {
     throw new Error('FORM_XLSX_HEADER_EMPTY')
   }
 
-  const sample = rows[0] ?? {}
-  const fields: FormFieldSchema[] = header.map((label) => ({
+  const firstNonEmptyRowIndex = normalizedRows.findIndex((row) => row.some((cell) => cell.length > 0))
+  if (firstNonEmptyRowIndex < 0) {
+    throw new Error('FORM_XLSX_HEADER_EMPTY')
+  }
+
+  const headerRow = normalizedRows[firstNonEmptyRowIndex]
+  const headerLabels = headerRow.filter((cell) => cell.length > 0)
+
+  // If there is only one header and many rows below, treat the first column as question list.
+  if (headerLabels.length === 1) {
+    const titleCandidate = headerLabels[0]
+    const questionRows = normalizedRows
+      .slice(firstNonEmptyRowIndex + 1)
+      .map((row) => row[0] ?? '')
+      .map((value) => String(value).trim())
+      .filter((value) => value.length > 0)
+
+    if (questionRows.length >= 2) {
+      const fields: FormFieldSchema[] = questionRows.map((label) => ({
+        key: normalizeKey(label),
+        label: safeLabel(label),
+        type: 'text',
+        required: false,
+      }))
+
+      return {
+        title: titleCandidate || templateName,
+        fields: dedupeFields(fields),
+      }
+    }
+  }
+
+  const fields: FormFieldSchema[] = headerLabels.map((label) => ({
     key: normalizeKey(label),
     label: safeLabel(label),
-    type: inferFieldType(sample[label]),
+    type: 'text',
     required: false,
   }))
+
+  if (fields.length === 0) {
+    throw new Error('FORM_XLSX_HEADER_EMPTY')
+  }
 
   return {
     title: templateName,
