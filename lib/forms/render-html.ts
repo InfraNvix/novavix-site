@@ -32,7 +32,7 @@ function renderField(field: FormFieldSchema): string {
     const options = (field.options ?? [])
       .map((opt) => {
         const safe = escapeHtml(opt)
-        return `<label class="radio">
+        return `<label class="radio-pill">
           <input type="radio" name="${name}" value="${safe}" ${required} />
           <span>${safe}</span>
         </label>`
@@ -42,7 +42,7 @@ function renderField(field: FormFieldSchema): string {
       <div class="field">
         <label>
           <span>${label}${field.required ? ' *' : ''}</span>
-          <div class="radio-group">
+          <div class="radio-group pills">
             ${options}
           </div>
         </label>
@@ -134,18 +134,27 @@ export function renderTemplateHtml(schema: FormTemplateSchema, templateName: str
         display: grid;
         gap: 8px;
       }
-      .radio {
+      .radio-group.pills {
         display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .radio-pill {
+        display: inline-flex;
         align-items: center;
-        gap: 10px;
-        padding: 10px 12px;
-        border-radius: 10px;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
         border: 1px solid #e2e8f0;
         background: #f8fafc;
-        font-size: 14px;
-        text-transform: none;
-        letter-spacing: normal;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
         color: #0f172a;
+      }
+      .radio-pill input {
+        width: 12px;
+        height: 12px;
       }
       .section h2 {
         margin: 8px 0 0;

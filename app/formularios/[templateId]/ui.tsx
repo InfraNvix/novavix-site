@@ -263,14 +263,14 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
                 </label>
 
                 {field.type === 'select' ? (
-                  <div className="grid gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {(field.options ?? []).map((opt) => {
                       const id = `${field.key}-${opt}`
                       return (
                         <label
                           key={opt}
                           htmlFor={id}
-                          className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                          className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs uppercase tracking-wide text-slate-700"
                         >
                           <input
                             id={id}
@@ -280,6 +280,7 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
                             checked={String(answers[field.key] ?? '') === opt}
                             onChange={(event) => setAnswers((prev) => ({ ...prev, [field.key]: event.target.value }))}
                             required={field.required}
+                            className="h-3 w-3"
                           />
                           <span>{opt}</span>
                         </label>
