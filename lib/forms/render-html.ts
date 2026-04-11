@@ -156,6 +156,16 @@ export function renderTemplateHtml(schema: FormTemplateSchema, templateName: str
         width: 12px;
         height: 12px;
       }
+      @media (max-width: 640px) {
+        .radio-group.pills {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .radio-pill {
+          width: 100%;
+          justify-content: flex-start;
+        }
+      }
       .section h2 {
         margin: 8px 0 0;
         font-size: 12px;

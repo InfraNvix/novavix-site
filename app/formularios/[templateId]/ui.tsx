@@ -263,7 +263,7 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
                 </label>
 
                 {field.type === 'select' ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col gap-2 md:flex-row md:flex-wrap">
                     {(field.options ?? []).map((opt) => {
                       const id = `${field.key}-${opt}`
                       return (
