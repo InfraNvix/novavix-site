@@ -263,19 +263,29 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
                 </label>
 
                 {field.type === 'select' ? (
-                  <select
-                    value={String(answers[field.key] ?? '')}
-                    onChange={(event) => setAnswers((prev) => ({ ...prev, [field.key]: event.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
-                    required={field.required}
-                  >
-                    <option value="">Selecione</option>
-                    {(field.options ?? []).map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="grid gap-2">
+                    {(field.options ?? []).map((opt) => {
+                      const id = `${field.key}-${opt}`
+                      return (
+                        <label
+                          key={opt}
+                          htmlFor={id}
+                          className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                        >
+                          <input
+                            id={id}
+                            type="radio"
+                            name={field.key}
+                            value={opt}
+                            checked={String(answers[field.key] ?? '') === opt}
+                            onChange={(event) => setAnswers((prev) => ({ ...prev, [field.key]: event.target.value }))}
+                            required={field.required}
+                          />
+                          <span>{opt}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
                 ) : field.type === 'boolean' ? (
                   <label className="inline-flex items-center gap-2 text-sm text-slate-700">
                     <input

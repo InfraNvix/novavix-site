@@ -30,16 +30,21 @@ function renderField(field: FormFieldSchema): string {
 
   if (field.type === 'select') {
     const options = (field.options ?? [])
-      .map((opt) => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`)
-      .join('')
+      .map((opt) => {
+        const safe = escapeHtml(opt)
+        return `<label class="radio">
+          <input type="radio" name="${name}" value="${safe}" ${required} />
+          <span>${safe}</span>
+        </label>`
+      })
+      .join('\n')
     return `
       <div class="field">
         <label>
           <span>${label}${field.required ? ' *' : ''}</span>
-          <select name="${name}" ${required}>
-            <option value="">Selecione</option>
+          <div class="radio-group">
             ${options}
-          </select>
+          </div>
         </label>
       </div>
     `
@@ -124,6 +129,23 @@ export function renderTemplateHtml(schema: FormTemplateSchema, templateName: str
         border-radius: 10px;
         border: 1px solid #e2e8f0;
         background: #f8fafc;
+      }
+      .radio-group {
+        display: grid;
+        gap: 8px;
+      }
+      .radio {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        font-size: 14px;
+        text-transform: none;
+        letter-spacing: normal;
+        color: #0f172a;
       }
       .section h2 {
         margin: 8px 0 0;
