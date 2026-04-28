@@ -5,6 +5,8 @@ type SendFormInviteInput = {
   collaboratorName: string | null
   templateName: string
   formUrl: string
+  expiresAtIso?: string | null
+  subject?: string | null
 }
 
 let cachedTransporter: nodemailer.Transporter | null = null
@@ -38,21 +40,37 @@ function getTransporter(): nodemailer.Transporter {
 export async function sendFormInvite(input: SendFormInviteInput): Promise<{ messageId: string | null }> {
   const fromAddress = getRequiredEnv('GMAIL_USER')
   const collaboratorDisplayName = input.collaboratorName?.trim() || 'colaborador(a)'
+  const hasExpiry = typeof input.expiresAtIso === 'string' && input.expiresAtIso.trim().length > 0
+  const expiryText = hasExpiry
+    ? new Date(input.expiresAtIso as string).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null
 
-  const subject = `Convite para responder formulario: ${input.templateName}`
+  const subject = input.subject?.trim() || `Convite para responder formulario: ${input.templateName}`
   const textBody = [
     `Ola, ${collaboratorDisplayName}.`,
     '',
     `Voce foi convidado(a) para responder o formulario "${input.templateName}".`,
     `Acesse pelo link: ${input.formUrl}`,
+    expiryText ? `Validade do link: ${expiryText}.` : null,
     '',
     'Se voce nao reconhece este convite, ignore este email.',
-  ].join('\n')
+  ]
+    .filter((line): line is string => Boolean(line))
+    .join('\n')
 
   const htmlBody = `
     <p>Ola, ${collaboratorDisplayName}.</p>
     <p>Voce foi convidado(a) para responder o formulario <strong>${input.templateName}</strong>.</p>
-    <p><a href="${input.formUrl}">Clique aqui para abrir o formulario</a></p>
+    <p><a href="${input.formUrl}" style="display:inline-block;padding:10px 14px;border-radius:8px;background:#1d4ed8;color:#ffffff;text-decoration:none;font-weight:700;">Abrir formulario</a></p>
+    ${expiryText ? `<p><strong>Validade do link:</strong> ${expiryText}.</p>` : ''}
+    <p>Se preferir, copie e cole este link no navegador:</p>
+    <p><a href="${input.formUrl}">${input.formUrl}</a></p>
     <p>Se voce nao reconhece este convite, ignore este email.</p>
   `
 
@@ -68,4 +86,3 @@ export async function sendFormInvite(input: SendFormInviteInput): Promise<{ mess
     messageId: info.messageId ?? null,
   }
 }
-

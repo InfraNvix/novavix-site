@@ -46,6 +46,11 @@ export default function AdminSetupClient() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteTemplateId, setInviteTemplateId] = useState('')
+  const [inviteExpiresInDays, setInviteExpiresInDays] = useState('7')
+  const [inviteSending, setInviteSending] = useState(false)
+  const [inviteFeedback, setInviteFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   async function loadData(): Promise<void> {
     setLoading(true)
@@ -64,7 +69,14 @@ export default function AdminSetupClient() {
 
       const nextCompanies = (companiesJson.data?.companies ?? []) as Company[]
       setCompanies(nextCompanies)
-      setTemplates((templatesJson.data?.templates ?? []) as Template[])
+      const nextTemplates = (templatesJson.data?.templates ?? []) as Template[]
+      setTemplates(nextTemplates)
+      if (!inviteTemplateId) {
+        const firstActiveTemplate = nextTemplates.find((template) => template.status === 'active')
+        if (firstActiveTemplate?.id) {
+          setInviteTemplateId(firstActiveTemplate.id)
+        }
+      }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar dados do painel.')
@@ -179,6 +191,45 @@ export default function AdminSetupClient() {
     }
   }
 
+  async function handleSendEmailInvite(event: React.FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault()
+    setInviteFeedback(null)
+    setError(null)
+    setSuccess(null)
+    setInviteSending(true)
+
+    try {
+      const response = await fetch('/api/admin/form-email-invites/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientEmail: inviteEmail,
+          templateId: inviteTemplateId,
+          expiresInDays: Number(inviteExpiresInDays || '7'),
+        }),
+      })
+      const json = await response.json()
+      if (!response.ok || !json.ok) {
+        const details = Array.isArray(json?.error?.details) ? json.error.details.join(' | ') : null
+        throw new Error(details || json?.error?.message || 'Falha ao enviar convite.')
+      }
+
+      setInviteFeedback({
+        type: 'success',
+        message: `Convite enviado para ${json.data.recipientEmail}.`,
+      })
+      setInviteEmail('')
+      setInviteExpiresInDays('7')
+    } catch (err) {
+      setInviteFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Falha ao enviar convite.',
+      })
+    } finally {
+      setInviteSending(false)
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 p-6 md:p-10">
       <section className="max-w-7xl mx-auto space-y-6">
@@ -264,6 +315,58 @@ export default function AdminSetupClient() {
               <button type="submit" className="w-full py-3 rounded-xl bg-slate-900 text-white text-sm font-bold">
                 Enviar template
               </button>
+            </form>
+          </article>
+
+          <article className="bg-white border border-slate-200 rounded-2xl p-5">
+            <h2 className="text-lg font-black text-slate-900">3. Enviar formulario por e-mail</h2>
+            <form className="mt-4 space-y-3" onSubmit={handleSendEmailInvite}>
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(event) => setInviteEmail(event.target.value)}
+                placeholder="E-mail de destino"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
+                required
+              />
+              <select
+                value={inviteTemplateId}
+                onChange={(event) => setInviteTemplateId(event.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
+                required
+              >
+                <option value="">Selecione o template</option>
+                {templates
+                  .filter((template) => template.status === 'active')
+                  .map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.templateName}
+                    </option>
+                  ))}
+              </select>
+              <input
+                type="number"
+                min={1}
+                max={30}
+                value={inviteExpiresInDays}
+                onChange={(event) => setInviteExpiresInDays(event.target.value)}
+                placeholder="Validade em dias (padrao: 7)"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
+              />
+              <button
+                type="submit"
+                disabled={inviteSending}
+                className="w-full py-3 rounded-xl bg-emerald-700 text-white text-sm font-bold disabled:opacity-60"
+              >
+                {inviteSending ? 'Enviando...' : 'Enviar convite'}
+              </button>
+              {inviteFeedback ? (
+                <p
+                  className={`text-sm ${inviteFeedback.type === 'success' ? 'text-emerald-700' : 'text-rose-700'}`}
+                >
+                  {inviteFeedback.message}
+                </p>
+              ) : null}
             </form>
           </article>
         </section>

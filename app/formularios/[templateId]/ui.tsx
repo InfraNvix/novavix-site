@@ -42,6 +42,10 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
   const [respondentEmail, setRespondentEmail] = useState('')
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({})
   const [finalized, setFinalized] = useState(false)
+  const [inviteToken, setInviteToken] = useState('')
+  const [inviteValidating, setInviteValidating] = useState(false)
+  const [inviteValid, setInviteValid] = useState(false)
+  const [inviteStatusMessage, setInviteStatusMessage] = useState<string | null>(null)
 
   useEffect(() => {
     const run = async () => {
@@ -73,6 +77,7 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
   useEffect(() => {
     const cnpjFromUrl = (searchParams.get('cnpj') ?? '').trim()
     const collaboratorExternalFromUrl = (searchParams.get('collaboratorExternalEmployeeId') ?? '').trim()
+    const inviteFromUrl = (searchParams.get('invite') ?? '').trim()
 
     if (cnpjFromUrl) {
       setCnpj(cnpjFromUrl)
@@ -80,7 +85,52 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
     if (collaboratorExternalFromUrl) {
       setPreferredExternalEmployeeId(collaboratorExternalFromUrl)
     }
+    if (inviteFromUrl) {
+      setInviteToken(inviteFromUrl)
+    }
   }, [searchParams])
+
+  useEffect(() => {
+    const run = async () => {
+      if (!inviteToken) {
+        setInviteValid(false)
+        setInviteStatusMessage(null)
+        return
+      }
+      setInviteValidating(true)
+      setInviteStatusMessage(null)
+      setError(null)
+      try {
+        const response = await fetch(`/api/forms/invites/validate?invite=${encodeURIComponent(inviteToken)}`)
+        const json = await response.json()
+        if (!response.ok || !json.ok) {
+          throw new Error(json?.error?.message ?? 'Convite invalido.')
+        }
+        setInviteValid(true)
+        const expiresAt = json.data?.expiresAt
+        if (typeof expiresAt === 'string' && expiresAt.trim()) {
+          setInviteStatusMessage(
+            `Link valido ate ${new Date(expiresAt).toLocaleString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}.`
+          )
+        } else {
+          setInviteStatusMessage('Link valido.')
+        }
+      } catch (err) {
+        setInviteValid(false)
+        setInviteStatusMessage(null)
+        setError(err instanceof Error ? err.message : 'Convite invalido.')
+      } finally {
+        setInviteValidating(false)
+      }
+    }
+    void run()
+  }, [inviteToken])
 
   useEffect(() => {
     setCollaborators([])
@@ -125,9 +175,10 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
   }
 
   useEffect(() => {
+    if (inviteToken) return
     if (!cnpj) return
     void handleLoadCollaborators()
-  }, [cnpj, preferredExternalEmployeeId])
+  }, [cnpj, preferredExternalEmployeeId, inviteToken])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
@@ -136,11 +187,15 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
     setError(null)
 
     try {
-      if (!cnpj) {
-        throw new Error('Informe o CNPJ antes de enviar.')
-      }
-      if (!collaboratorId) {
-        throw new Error('Selecione o colaborador.')
+      if (!inviteToken) {
+        if (!cnpj) {
+          throw new Error('Informe o CNPJ antes de enviar.')
+        }
+        if (!collaboratorId) {
+          throw new Error('Selecione o colaborador.')
+        }
+      } else if (!inviteValid) {
+        throw new Error('Convite invalido ou expirado.')
       }
 
       const response = await fetch(`/api/forms/${template.id}/submit`, {
@@ -151,6 +206,7 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
           collaboratorId,
           respondentName,
           respondentEmail,
+          invite: inviteToken || undefined,
           answers,
         }),
       })
@@ -194,9 +250,17 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
       <section className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-2xl p-6">
         <p className="text-xs uppercase tracking-widest font-black text-blue-700">Formulario Dinamico</p>
         <h1 className="text-2xl font-black text-slate-900 mt-2">{template.schema.title || template.templateName}</h1>
-        <p className="text-sm text-slate-600 mt-2">Preencha o CNPJ e selecione o colaborador.</p>
+        <p className="text-sm text-slate-600 mt-2">
+          {inviteToken ? 'Preencha o formulario usando seu link unico.' : 'Preencha o CNPJ e selecione o colaborador.'}
+        </p>
 
         {error ? <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div> : null}
+        {inviteValidating ? (
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">Validando convite...</div>
+        ) : null}
+        {inviteToken && inviteValid && inviteStatusMessage ? (
+          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{inviteStatusMessage}</div>
+        ) : null}
         {finalized ? (
           <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-700">
             <div className="flex items-center gap-3">
@@ -215,48 +279,50 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
         ) : null}
 
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
-            <div className="flex flex-col gap-2">
-              <label className="text-[11px] font-black uppercase tracking-widest text-slate-600">CNPJ</label>
-              <div className="flex flex-col md:flex-row gap-2">
-                <input
-                  value={cnpj}
-                  onChange={(event) => setCnpj(event.target.value)}
-                  placeholder="Digite o CNPJ da empresa"
-                  className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={handleLoadCollaborators}
-                  disabled={collaboratorLoading}
-                  className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold disabled:opacity-60"
+          {!inviteToken ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+              <div className="flex flex-col gap-2">
+                <label className="text-[11px] font-black uppercase tracking-widest text-slate-600">CNPJ</label>
+                <div className="flex flex-col md:flex-row gap-2">
+                  <input
+                    value={cnpj}
+                    onChange={(event) => setCnpj(event.target.value)}
+                    placeholder="Digite o CNPJ da empresa"
+                    className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleLoadCollaborators}
+                    disabled={collaboratorLoading}
+                    className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold disabled:opacity-60"
+                  >
+                    {collaboratorLoading ? 'Buscando...' : 'Buscar colaboradores'}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-black uppercase tracking-widest text-slate-600 mb-2 block">
+                  Colaborador
+                </label>
+                <select
+                  value={collaboratorId}
+                  onChange={(event) => setCollaboratorId(event.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm"
+                  required
                 >
-                  {collaboratorLoading ? 'Buscando...' : 'Buscar colaboradores'}
-                </button>
+                  <option value="">Selecione o colaborador</option>
+                  {collaborators.map((collaborator) => (
+                    <option key={collaborator.id} value={collaborator.id}>
+                      {collaborator.fullName ?? 'Sem nome'}
+                      {collaborator.externalEmployeeId ? ` - ${collaborator.externalEmployeeId}` : ''}
+                    </option>
+                  ))}
+                </select>
+                {collaboratorMessage ? <p className="text-xs text-slate-500 mt-2">{collaboratorMessage}</p> : null}
               </div>
             </div>
-
-            <div>
-              <label className="text-[11px] font-black uppercase tracking-widest text-slate-600 mb-2 block">
-                Colaborador
-              </label>
-              <select
-                value={collaboratorId}
-                onChange={(event) => setCollaboratorId(event.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm"
-                required
-              >
-                <option value="">Selecione o colaborador</option>
-                {collaborators.map((collaborator) => (
-                  <option key={collaborator.id} value={collaborator.id}>
-                    {collaborator.fullName ?? 'Sem nome'}
-                    {collaborator.externalEmployeeId ? ` - ${collaborator.externalEmployeeId}` : ''}
-                  </option>
-                ))}
-              </select>
-              {collaboratorMessage ? <p className="text-xs text-slate-500 mt-2">{collaboratorMessage}</p> : null}
-            </div>
-          </div>
+          ) : null}
 
           <input
             value={respondentName}
@@ -337,7 +403,7 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
 
           <button
             type="submit"
-            disabled={submitState === 'submitting' || submitState === 'success'}
+            disabled={submitState === 'submitting' || submitState === 'success' || (Boolean(inviteToken) && (!inviteValid || inviteValidating))}
             className="w-full py-3 rounded-xl bg-blue-700 text-white text-sm font-bold disabled:opacity-60"
           >
             {submitState === 'submitting' ? 'Enviando...' : submitState === 'success' ? 'Enviado' : 'Enviar respostas'}
