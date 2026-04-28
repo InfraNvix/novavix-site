@@ -30,6 +30,39 @@ function normalizeEmail(value: string): string {
   return value.trim().toLowerCase()
 }
 
+function describeDbError(error: unknown): string[] {
+  if (!error || typeof error !== 'object') return []
+  const maybe = error as { code?: string; message?: string; details?: string | null; hint?: string | null }
+  const parts = [maybe.code, maybe.message, maybe.details ?? undefined, maybe.hint ?? undefined].filter(
+    (item): item is string => typeof item === 'string' && item.trim().length > 0
+  )
+  return parts
+}
+
+function describeRuntimeError(error: unknown): string[] {
+  if (!error || typeof error !== 'object') {
+    if (typeof error === 'string' && error.trim().length > 0) return [error]
+    return []
+  }
+  const maybe = error as {
+    name?: string
+    message?: string
+    code?: string
+    command?: string
+    response?: string
+    responseCode?: number
+  }
+  const parts = [
+    maybe.name,
+    maybe.message,
+    maybe.code,
+    maybe.command,
+    maybe.response,
+    typeof maybe.responseCode === 'number' ? String(maybe.responseCode) : undefined,
+  ].filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+  return parts
+}
+
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const supabase = getSupabaseServerClient()
@@ -93,7 +126,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     const dedupThreshold = new Date(Date.now() - DEDUP_WINDOW_MINUTES * 60_000).toISOString()
-    const { data: recentPending } = await admin
+    const { data: recentPending, error: recentPendingError } = await admin
       .from('form_email_invites')
       .select('id, created_at')
       .eq('template_id', template.id)
@@ -102,6 +135,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       .gte('created_at', dedupThreshold)
       .limit(1)
       .maybeSingle()
+
+    if (recentPendingError) {
+      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao consultar convites pendentes.', describeDbError(recentPendingError))
+    }
 
     if (recentPending?.id) {
       return errorResponse(409, 'CONFLICT', 'Ja existe um convite recente para este e-mail e template.')
@@ -120,12 +157,14 @@ export async function POST(request: Request): Promise<NextResponse> {
         status: 'pending',
         expires_at: expiresAt,
         created_by: user.id,
+        sent_at: null,
+        last_error: null,
       })
       .select('id, expires_at, created_at')
       .single()
 
     if (inviteError || !invite?.id) {
-      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao registrar convite.')
+      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao registrar convite.', describeDbError(inviteError))
     }
 
     const formUrl = new URL(`/formularios/${template.id}`, getAppBaseUrl())
@@ -141,9 +180,26 @@ export async function POST(request: Request): Promise<NextResponse> {
         subject: 'Voce recebeu um formulario para preenchimento',
       })
     } catch (mailError) {
-      await admin.from('form_email_invites').update({ status: 'revoked' }).eq('id', invite.id)
-      throw mailError
+      const runtimeDetails = describeRuntimeError(mailError)
+      const lastError = runtimeDetails.join(' | ').slice(0, 4000)
+      await admin
+        .from('form_email_invites')
+        .update({
+          status: 'revoked',
+          last_error: lastError || 'EMAIL_SEND_FAILED',
+        })
+        .eq('id', invite.id)
+      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao enviar e-mail de convite.', runtimeDetails)
     }
+
+    const sentAt = new Date().toISOString()
+    await admin
+      .from('form_email_invites')
+      .update({
+        sent_at: sentAt,
+        last_error: null,
+      })
+      .eq('id', invite.id)
 
     return NextResponse.json(
       {
@@ -154,6 +210,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           recipientEmail,
           expiresAt: invite.expires_at,
           createdAt: invite.created_at,
+          sentAt,
         },
       },
       { status: 201 }
