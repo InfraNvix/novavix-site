@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import type { FormFieldSchema, FormTemplateSchema } from '@/lib/forms/parser'
 
 type TemplateResponse = {
@@ -26,6 +27,7 @@ function toInputType(field: FormFieldSchema): string {
 }
 
 export default function DynamicFormClient({ templateId }: { templateId: string }) {
+  const searchParams = useSearchParams()
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [submitState, setSubmitState] = useState<SubmitState>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -34,6 +36,7 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
   const [collaboratorId, setCollaboratorId] = useState('')
   const [collaboratorLoading, setCollaboratorLoading] = useState(false)
   const [collaboratorMessage, setCollaboratorMessage] = useState<string | null>(null)
+  const [preferredExternalEmployeeId, setPreferredExternalEmployeeId] = useState('')
   const [cnpj, setCnpj] = useState('')
   const [respondentName, setRespondentName] = useState('')
   const [respondentEmail, setRespondentEmail] = useState('')
@@ -68,6 +71,18 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
   }, [templateId])
 
   useEffect(() => {
+    const cnpjFromUrl = (searchParams.get('cnpj') ?? '').trim()
+    const collaboratorExternalFromUrl = (searchParams.get('collaboratorExternalEmployeeId') ?? '').trim()
+
+    if (cnpjFromUrl) {
+      setCnpj(cnpjFromUrl)
+    }
+    if (collaboratorExternalFromUrl) {
+      setPreferredExternalEmployeeId(collaboratorExternalFromUrl)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
     setCollaborators([])
     setCollaboratorId('')
     setCollaboratorMessage(null)
@@ -89,7 +104,13 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
 
       const list = (json.data?.collaborators ?? []) as Collaborator[]
       setCollaborators(list)
-      setCollaboratorId('')
+      const preferred = preferredExternalEmployeeId.trim().toLowerCase()
+      if (preferred) {
+        const matched = list.find((item) => (item.externalEmployeeId ?? '').trim().toLowerCase() === preferred)
+        setCollaboratorId(matched?.id ?? '')
+      } else {
+        setCollaboratorId('')
+      }
       if (list.length === 0) {
         setCollaboratorMessage('Nenhum colaborador ativo encontrado para este CNPJ.')
       }
@@ -102,6 +123,11 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
       setCollaboratorLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!cnpj) return
+    void handleLoadCollaborators()
+  }, [cnpj, preferredExternalEmployeeId])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()

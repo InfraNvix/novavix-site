@@ -205,11 +205,16 @@ export async function processImportCommit(input: ProcessImportCommitInput): Prom
     ignoredRows,
   }
 
-  return markImportJobAsCommitted({
+  const result = await markImportJobAsCommitted({
     importJobId: input.importJobId,
     mapping,
     summary,
     issuesSample: issues.slice(0, 50),
     status: invalidRows > 0 && importedRows === 0 ? 'failed' : 'committed',
   })
+
+  return {
+    ...result,
+    importedCollaboratorExternalEmployeeIds: rowsToPersist.map((row) => row.externalEmployeeId),
+  }
 }

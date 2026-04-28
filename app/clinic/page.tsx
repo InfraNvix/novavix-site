@@ -45,6 +45,7 @@ export default function ClinicPage() {
   const [error, setError] = useState<string | null>(null)
   const [loadingPreview, setLoadingPreview] = useState(false)
   const [loadingCommit, setLoadingCommit] = useState(false)
+  const [templateId, setTemplateId] = useState('')
 
   const supabase = useMemo(() => {
     if (DEMO_MODE_ENABLED) return null
@@ -190,7 +191,7 @@ export default function ClinicPage() {
 
     try {
       if (DEMO_MODE_ENABLED) {
-        setStatus('Importacao demo concluida: links de questionario preparados para envio.')
+        setStatus('Importacao demo concluida: colaboradores atualizados para envio por e-mail.')
         return
       }
 
@@ -205,15 +206,50 @@ export default function ClinicPage() {
       })
 
       const json = (await response.json()) as
-        | { ok: true; data: { summary: { importedRows: number; invalidRows: number; ignoredRows: number } } }
+        | {
+            ok: true
+            data: {
+              summary: { importedRows: number; invalidRows: number; ignoredRows: number }
+              importedCollaboratorExternalEmployeeIds?: string[]
+            }
+          }
         | { ok: false; error?: { message?: string } }
 
       if (!response.ok || !json.ok) {
         throw new Error(json.ok ? 'Falha no commit.' : json.error?.message ?? 'Falha no commit.')
       }
 
+      const importedCollaboratorExternalEmployeeIds = Array.from(
+        new Set((json.data.importedCollaboratorExternalEmployeeIds ?? []).filter((value) => typeof value === 'string' && value.trim().length > 0))
+      )
+
+      let inviteMessage = ''
+      if (templateId.trim().length > 0 && importedCollaboratorExternalEmployeeIds.length > 0) {
+        const inviteResponse = await fetch('/api/forms/invites/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            templateId: templateId.trim(),
+            companyId: companyId.trim(),
+            collaboratorExternalEmployeeIds: importedCollaboratorExternalEmployeeIds,
+          }),
+        })
+
+        const inviteJson = (await inviteResponse.json()) as
+          | { ok: true; data: { sentCount: number; failedCount: number } }
+          | { ok: false; error?: { message?: string } }
+
+        if (!inviteResponse.ok || !inviteJson.ok) {
+          throw new Error(inviteJson.ok ? 'Falha ao enviar convites por e-mail.' : inviteJson.error?.message ?? 'Falha ao enviar convites por e-mail.')
+        }
+
+        inviteMessage = ` | E-mails enviados: ${inviteJson.data.sentCount} | Falhas: ${inviteJson.data.failedCount}`
+      } else if (templateId.trim().length > 0) {
+        inviteMessage = ' | Nenhum colaborador novo para envio de convite.'
+      }
+
       setStatus(
-        `Importacao concluida. Importados: ${json.data.summary.importedRows} | Invalidos: ${json.data.summary.invalidRows} | Ignorados: ${json.data.summary.ignoredRows}`
+        `Importacao concluida. Importados: ${json.data.summary.importedRows} | Invalidos: ${json.data.summary.invalidRows} | Ignorados: ${json.data.summary.ignoredRows}${inviteMessage}`
       )
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao confirmar importacao.')
@@ -229,7 +265,7 @@ export default function ClinicPage() {
           <div>
             <p className="text-xs uppercase tracking-widest font-black text-cyan-700">Area Clinica</p>
             <h1 className="text-2xl font-black text-slate-900 mt-1">Importacao de Empregados para Questionarios</h1>
-            <p className="text-sm text-slate-600 mt-2">Importe CPF, WhatsApp e e-mail para preparar envios de links.</p>
+            <p className="text-sm text-slate-600 mt-2">Importe CPF, WhatsApp e e-mail para preparar envios de links por e-mail.</p>
           </div>
           <div className="flex gap-2">
             <button onClick={() => router.push('/dashboard')} className="px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold">
@@ -242,11 +278,17 @@ export default function ClinicPage() {
         </header>
 
         <section className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
-          <div className="grid md:grid-cols-3 gap-3">
+          <div className="grid md:grid-cols-4 gap-3">
             <input
               value={companyId}
               onChange={(event) => setCompanyId(event.target.value)}
               placeholder="companyId da empresa"
+              className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
+            />
+            <input
+              value={templateId}
+              onChange={(event) => setTemplateId(event.target.value)}
+              placeholder="templateId do formulario para envio (opcional)"
               className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm"
             />
             <input

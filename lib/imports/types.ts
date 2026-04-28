@@ -82,6 +82,7 @@ export type ImportCommitResponse = {
     ignoredRows: number
   }
   issuesSample: ImportValidationIssue[]
+  importedCollaboratorExternalEmployeeIds?: string[]
 }
 
 export type ImportTableData = {
