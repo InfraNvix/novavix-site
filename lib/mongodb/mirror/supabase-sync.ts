@@ -83,6 +83,7 @@ type FormEmailInviteRow = {
   id: string
   template_id: string
   recipient_email: string
+  token_hash: string
   status: string
   expires_at: string
   used_at: string | null
@@ -281,6 +282,7 @@ export async function upsertFormEmailInvites(db: Db, rows: FormEmailInviteRow[])
           supabase_id: row.id,
           template_id: row.template_id,
           recipient_email: row.recipient_email,
+          token_hash: row.token_hash,
           status: row.status,
           expires_at: row.expires_at,
           used_at: row.used_at,
@@ -385,7 +387,8 @@ export async function syncSupabaseToMongo(): Promise<{ synced: SyncCount }> {
     db,
     table: 'form_email_invites',
     fetchTableName: 'form_email_invites',
-    columns: 'id, template_id, recipient_email, status, expires_at, used_at, sent_at, last_error, created_at, created_by',
+    columns:
+      'id, template_id, recipient_email, token_hash, status, expires_at, used_at, sent_at, last_error, created_at, created_by',
     upsert: upsertFormEmailInvites,
     synced,
   })

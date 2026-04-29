@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { sendFormInvite } from '@/lib/email/send-form-invite'
+import { mirrorFormEmailInviteById } from '@/lib/mongodb/mirror/write-through'
 
 type ApiErrorCode = 'INVALID_JSON' | 'VALIDATION_ERROR' | 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'CONFLICT' | 'INTERNAL_ERROR'
 
@@ -167,6 +168,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao registrar convite.', describeDbError(inviteError))
     }
 
+    await mirrorFormEmailInviteById(invite.id, 'insert_pending')
+
     const formUrl = new URL(`/formularios/${template.id}`, getAppBaseUrl())
     formUrl.searchParams.set('invite', token)
 
@@ -189,6 +192,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           last_error: lastError || 'EMAIL_SEND_FAILED',
         })
         .eq('id', invite.id)
+      await mirrorFormEmailInviteById(invite.id, 'update_revoked_after_email_failure')
       return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao enviar e-mail de convite.', runtimeDetails)
     }
 
@@ -200,6 +204,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         last_error: null,
       })
       .eq('id', invite.id)
+
+    await mirrorFormEmailInviteById(invite.id, 'insert_or_update_sent')
 
     return NextResponse.json(
       {
@@ -220,3 +226,4 @@ export async function POST(request: Request): Promise<NextResponse> {
     return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao enviar convite por e-mail.', details)
   }
 }
+

@@ -4,6 +4,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { normalizeCnpj, isValidCnpjFormat } from '@/lib/auth/cnpj'
 import type { FormTemplateSchema } from '@/lib/forms/parser'
 import { validateSubmissionAnswers } from '@/lib/forms/runtime'
+import { mirrorCompanyFormSubmissionById, mirrorFormEmailInviteById } from '@/lib/mongodb/mirror/write-through'
 
 type ApiErrorCode = 'INVALID_JSON' | 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR'
 
@@ -126,6 +127,7 @@ export async function POST(
       if (Date.now() > new Date(invite.expires_at).getTime()) {
         if (invite.status === 'pending') {
           await admin.from('form_email_invites').update({ status: 'expired' }).eq('id', invite.id)
+          await mirrorFormEmailInviteById(invite.id, 'update_expired_on_submit')
         }
         return errorResponse(422, 'VALIDATION_ERROR', 'Este convite expirou.')
       }
@@ -196,6 +198,8 @@ export async function POST(
       return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao salvar respostas.')
     }
 
+    await mirrorCompanyFormSubmissionById(inserted.id, 'insert_form_submission')
+
     if (inviteId) {
       const { error: inviteUpdateError } = await admin
         .from('form_email_invites')
@@ -209,6 +213,8 @@ export async function POST(
       if (inviteUpdateError) {
         return errorResponse(500, 'INTERNAL_ERROR', 'Resposta salva, mas nao foi possivel finalizar o convite.')
       }
+
+      await mirrorFormEmailInviteById(inviteId, 'update_used_on_submit')
     }
 
     return NextResponse.json(
@@ -227,3 +233,4 @@ export async function POST(
     return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao enviar formulario.', details)
   }
 }
+

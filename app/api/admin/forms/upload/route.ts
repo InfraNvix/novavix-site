@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { parseCsvTemplate, parseJsonTemplate, parseXlsxTemplate } from '@/lib/forms/parser'
+import { mirrorCompanyFormTemplateById } from '@/lib/mongodb/mirror/write-through'
 
 type ApiErrorCode =
   | 'VALIDATION_ERROR'
@@ -114,6 +115,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao salvar template de formulario.')
     }
 
+    await mirrorCompanyFormTemplateById(inserted.id, 'insert_template_upload')
+
     return NextResponse.json(
       {
         ok: true,
@@ -134,3 +137,4 @@ export async function POST(request: Request): Promise<NextResponse> {
     return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna no upload do formulario.', details)
   }
 }
+

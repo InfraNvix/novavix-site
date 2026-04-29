@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { normalizeCnpj, isValidCnpjFormat } from '@/lib/auth/cnpj'
 import { validateStrongPassword } from '@/lib/auth/password-policy'
+import { mirrorCompanyById, mirrorUserProfileByUserId } from '@/lib/mongodb/mirror/write-through'
 
 type ApiErrorCode =
   | 'INVALID_JSON'
@@ -131,6 +132,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao criar empresa.')
     }
 
+    await mirrorCompanyById(insertedCompany.id, 'insert_company_admin_panel')
+
     const { data: createdUser, error: userError } = await admin.auth.admin.createUser({
       email: loginEmail,
       password,
@@ -163,6 +166,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       await admin.from('companies').delete().eq('id', insertedCompany.id)
       return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao criar perfil de acesso da empresa.')
     }
+
+    await mirrorUserProfileByUserId(companyUserId, 'insert_user_profile_admin_panel')
 
     return NextResponse.json(
       {
@@ -246,3 +251,4 @@ export async function GET(): Promise<NextResponse> {
     return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao listar empresas.', details)
   }
 }
+

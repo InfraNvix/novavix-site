@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
+import { mirrorFormEmailInviteById } from '@/lib/mongodb/mirror/write-through'
 
 type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'FORBIDDEN' | 'INTERNAL_ERROR'
 
@@ -40,6 +41,7 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     if (isExpired && invite.status === 'pending') {
       await admin.from('form_email_invites').update({ status: 'expired' }).eq('id', invite.id)
+      await mirrorFormEmailInviteById(invite.id, 'update_expired_on_validate')
     }
 
     if (isUsed) {
@@ -80,3 +82,4 @@ export async function GET(request: Request): Promise<NextResponse> {
     return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao validar convite.', details)
   }
 }
+
