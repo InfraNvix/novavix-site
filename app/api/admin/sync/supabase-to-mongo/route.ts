@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
-import { syncSupabaseToMongo } from '@/lib/mongodb/mirror/supabase-sync'
+import { syncSupabaseToMongo, SyncStepError } from '@/lib/mongodb/mirror/supabase-sync'
 
 type ApiErrorCode = 'UNAUTHORIZED' | 'FORBIDDEN' | 'INTERNAL_ERROR'
 
@@ -37,6 +37,22 @@ export async function POST(): Promise<NextResponse> {
 
     return NextResponse.json({ ok: true, synced: syncResult.synced }, { status: 200 })
   } catch (error) {
+    if (error instanceof SyncStepError) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: {
+            message: `Falha ao sincronizar ${error.table}`,
+            table: error.table,
+            detail: error.detail,
+            code: 'INTERNAL_ERROR',
+          },
+          partialSynced: error.partialSynced,
+        },
+        { status: 500 }
+      )
+    }
+
     console.error('POST /api/admin/sync/supabase-to-mongo failed', error)
     return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao sincronizar Supabase para MongoDB.')
   }

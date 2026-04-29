@@ -2,16 +2,38 @@ import type { Db } from 'mongodb'
 import { getMongoDb } from '@/lib/mongodb/client'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 
-type SyncEntity =
+export type SyncEntity =
   | 'companies'
   | 'user_profiles'
   | 'company_form_templates'
   | 'company_form_submissions'
   | 'form_email_invites'
 
-type SyncCount = Record<SyncEntity, number>
+export type SyncCount = Record<SyncEntity, number>
 
 const SUPABASE_PAGE_SIZE = 1000
+const REDACTED = '[REDACTED]'
+
+export class SyncStepError extends Error {
+  table: SyncEntity
+  operation: string
+  detail: string
+  partialSynced: SyncCount
+
+  constructor(params: {
+    table: SyncEntity
+    operation: string
+    detail: string
+    partialSynced: SyncCount
+  }) {
+    super(`Falha ao sincronizar ${params.table}`)
+    this.name = 'SyncStepError'
+    this.table = params.table
+    this.operation = params.operation
+    this.detail = params.detail
+    this.partialSynced = params.partialSynced
+  }
+}
 
 type CompanyRow = {
   id: string
@@ -68,6 +90,41 @@ type FormEmailInviteRow = {
   last_error: string | null
   created_at: string
   created_by: string | null
+}
+
+function initialSyncCount(): SyncCount {
+  return {
+    companies: 0,
+    user_profiles: 0,
+    company_form_templates: 0,
+    company_form_submissions: 0,
+    form_email_invites: 0,
+  }
+}
+
+function sanitizeErrorDetail(error: unknown): string {
+  const raw =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : 'Erro interno durante sincronizacao.'
+
+  const sanitized = raw
+    .replace(/mongodb(?:\+srv)?:\/\/[^\s]+/gi, REDACTED)
+    .replace(/(SUPABASE_SERVICE_ROLE_KEY|MONGODB_URI|password|passwd|token|secret)\s*[:=]\s*[^\s,;]+/gi, `$1=${REDACTED}`)
+
+  return sanitized.slice(0, 500)
+}
+
+function logStepError(table: SyncEntity, operation: string, error: unknown): void {
+  const message = sanitizeErrorDetail(error)
+  console.error('[supabase-to-mongo sync] step failed', {
+    table,
+    operation,
+    message,
+    rawError: error,
+  })
 }
 
 async function fetchAll<T extends Record<string, unknown>>(table: string, columns: string): Promise<T[]> {
@@ -242,42 +299,96 @@ export async function upsertFormEmailInvites(db: Db, rows: FormEmailInviteRow[])
   return rows.length
 }
 
+async function syncStep<T extends Record<string, unknown>>(params: {
+  db: Db
+  table: SyncEntity
+  columns: string
+  fetchTableName: string
+  upsert: (db: Db, rows: T[]) => Promise<number>
+  synced: SyncCount
+}): Promise<void> {
+  const { db, table, columns, fetchTableName, upsert, synced } = params
+
+  try {
+    const rows = await fetchAll<T>(fetchTableName, columns)
+
+    try {
+      synced[table] = await upsert(db, rows)
+    } catch (error) {
+      logStepError(table, 'mongo_upsert', error)
+      throw new SyncStepError({
+        table,
+        operation: 'mongo_upsert',
+        detail: sanitizeErrorDetail(error),
+        partialSynced: { ...synced },
+      })
+    }
+  } catch (error) {
+    if (error instanceof SyncStepError) {
+      throw error
+    }
+
+    logStepError(table, 'supabase_fetch', error)
+    throw new SyncStepError({
+      table,
+      operation: 'supabase_fetch',
+      detail: sanitizeErrorDetail(error),
+      partialSynced: { ...synced },
+    })
+  }
+}
+
 export async function syncSupabaseToMongo(): Promise<{ synced: SyncCount }> {
   const db = await getMongoDb()
   await ensureIndexes(db)
 
-  const [companies, userProfiles, formTemplates, formSubmissions, formInvites] = await Promise.all([
-    fetchAll<CompanyRow>('companies', 'id, cnpj, razao_social, nome_fantasia, status, created_at, updated_at'),
-    fetchAll<UserProfileRow>('user_profiles', 'user_id, role, company_id, login_email, is_active, created_at, updated_at'),
-    fetchAll<CompanyFormTemplateRow>(
-      'company_form_templates',
-      'id, company_id, template_name, source_format, source_file_name, schema_json, status, uploaded_by_user_id, created_at, updated_at'
-    ),
-    fetchAll<CompanyFormSubmissionRow>(
-      'company_form_submissions',
-      'id, template_id, company_id, respondent_name, respondent_email, answers_json, invite_id, created_at'
-    ),
-    fetchAll<FormEmailInviteRow>(
-      'form_email_invites',
-      'id, template_id, recipient_email, status, expires_at, used_at, sent_at, last_error, created_at, created_by'
-    ),
-  ])
+  const synced = initialSyncCount()
 
-  const [companiesCount, userProfilesCount, templatesCount, submissionsCount, invitesCount] = await Promise.all([
-    upsertCompanies(db, companies),
-    upsertUserProfiles(db, userProfiles),
-    upsertCompanyFormTemplates(db, formTemplates),
-    upsertCompanyFormSubmissions(db, formSubmissions),
-    upsertFormEmailInvites(db, formInvites),
-  ])
+  await syncStep<CompanyRow>({
+    db,
+    table: 'companies',
+    fetchTableName: 'companies',
+    columns: 'id, cnpj, razao_social, nome_fantasia, status, created_at, updated_at',
+    upsert: upsertCompanies,
+    synced,
+  })
 
-  return {
-    synced: {
-      companies: companiesCount,
-      user_profiles: userProfilesCount,
-      company_form_templates: templatesCount,
-      company_form_submissions: submissionsCount,
-      form_email_invites: invitesCount,
-    },
-  }
+  await syncStep<UserProfileRow>({
+    db,
+    table: 'user_profiles',
+    fetchTableName: 'user_profiles',
+    columns: 'user_id, role, company_id, login_email, is_active, created_at, updated_at',
+    upsert: upsertUserProfiles,
+    synced,
+  })
+
+  await syncStep<CompanyFormTemplateRow>({
+    db,
+    table: 'company_form_templates',
+    fetchTableName: 'company_form_templates',
+    columns:
+      'id, company_id, template_name, source_format, source_file_name, schema_json, status, uploaded_by_user_id, created_at, updated_at',
+    upsert: upsertCompanyFormTemplates,
+    synced,
+  })
+
+  await syncStep<CompanyFormSubmissionRow>({
+    db,
+    table: 'company_form_submissions',
+    fetchTableName: 'company_form_submissions',
+    columns: 'id, template_id, company_id, respondent_name, respondent_email, answers_json, invite_id, created_at',
+    upsert: upsertCompanyFormSubmissions,
+    synced,
+  })
+
+  await syncStep<FormEmailInviteRow>({
+    db,
+    table: 'form_email_invites',
+    fetchTableName: 'form_email_invites',
+    columns: 'id, template_id, recipient_email, status, expires_at, used_at, sent_at, last_error, created_at, created_by',
+    upsert: upsertFormEmailInvites,
+    synced,
+  })
+
+  return { synced }
 }
