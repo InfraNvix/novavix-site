@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
+import { randomUUID } from 'node:crypto'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
-import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { parseCsvTemplate, parseJsonTemplate, parseXlsxTemplate } from '@/lib/forms/parser'
-import { mirrorCompanyFormTemplateById } from '@/lib/mongodb/mirror/write-through'
+import { backupTemplateToSupabase, getProfileMongoFirst, insertTemplateMongo } from '@/lib/mongodb/primary-store'
 
 type ApiErrorCode =
   | 'VALIDATION_ERROR'
@@ -48,11 +48,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       return errorResponse(401, 'UNAUTHORIZED', 'Sessao invalida.')
     }
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role, is_active')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    const profile = await getProfileMongoFirst(user.id)
 
     if (!profile?.is_active) {
       return errorResponse(403, 'FORBIDDEN', 'Perfil inativo.')
@@ -81,7 +77,6 @@ export async function POST(request: Request): Promise<NextResponse> {
       return errorResponse(422, 'VALIDATION_ERROR', 'Formato nao suportado. Use .json, .csv ou .xlsx.')
     }
 
-    const admin = getSupabaseAdminClient()
     const fileBuffer = Buffer.from(await file.arrayBuffer())
     let schema
     try {
@@ -97,37 +92,40 @@ export async function POST(request: Request): Promise<NextResponse> {
       return errorResponse(422, 'DOMAIN_ERROR', 'Falha ao interpretar arquivo de formulario.', [code])
     }
 
-    const { data: inserted, error: insertError } = await admin
-      .from('company_form_templates')
-      .insert({
-        company_id: null,
-        template_name: templateName,
-        source_format: format,
-        source_file_name: file.name,
-        schema_json: schema,
-        status: 'active',
-        uploaded_by_user_id: user.id,
-      })
-      .select('id, template_name, source_format, source_file_name, status, created_at, schema_json')
-      .single()
-
-    if (insertError || !inserted) {
-      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao salvar template de formulario.')
-    }
-
-    await mirrorCompanyFormTemplateById(inserted.id, 'insert_template_upload')
+    const templateId = randomUUID()
+    const createdAt = new Date().toISOString()
+    await insertTemplateMongo({
+      id: templateId,
+      company_id: null,
+      template_name: templateName,
+      source_format: format,
+      source_file_name: file.name,
+      schema_json: schema,
+      status: 'active',
+      uploaded_by_user_id: user.id,
+    })
+    await backupTemplateToSupabase({
+      id: templateId,
+      company_id: null,
+      template_name: templateName,
+      source_format: format,
+      source_file_name: file.name,
+      schema_json: schema,
+      status: 'active',
+      uploaded_by_user_id: user.id,
+    })
 
     return NextResponse.json(
       {
         ok: true,
         data: {
-          id: inserted.id,
-          templateName: inserted.template_name,
-          sourceFormat: inserted.source_format,
-          sourceFileName: inserted.source_file_name,
-          status: inserted.status,
-          createdAt: inserted.created_at,
-          schema: inserted.schema_json,
+          id: templateId,
+          templateName,
+          sourceFormat: format,
+          sourceFileName: file.name,
+          status: 'active',
+          createdAt,
+          schema,
         },
       },
       { status: 201 }

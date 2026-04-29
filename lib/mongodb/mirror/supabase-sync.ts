@@ -57,7 +57,7 @@ type UserProfileRow = {
 
 type CompanyFormTemplateRow = {
   id: string
-  company_id: string
+  company_id: string | null
   template_name: string
   source_format: string
   source_file_name: string

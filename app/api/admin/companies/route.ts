@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server'
+import { randomUUID } from 'node:crypto'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { normalizeCnpj, isValidCnpjFormat } from '@/lib/auth/cnpj'
 import { validateStrongPassword } from '@/lib/auth/password-policy'
-import { mirrorCompanyById, mirrorUserProfileByUserId } from '@/lib/mongodb/mirror/write-through'
+import {
+  backupCompanyToSupabase,
+  backupUserProfileToSupabase,
+  findCompanyByCnpjMongo,
+  getProfileMongoFirst,
+  insertCompanyMongo,
+  insertUserProfileMongo,
+  listCompaniesMongo,
+} from '@/lib/mongodb/primary-store'
 
 type ApiErrorCode =
   | 'INVALID_JSON'
@@ -42,11 +51,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       return errorResponse(401, 'UNAUTHORIZED', 'Sessao invalida.')
     }
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role, is_active')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    const profile = await getProfileMongoFirst(user.id)
 
     if (!profile?.is_active) {
       return errorResponse(403, 'FORBIDDEN', 'Perfil inativo.')
@@ -95,18 +100,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       return errorResponse(422, 'VALIDATION_ERROR', 'Dados invalidos para cadastro.', errors)
     }
 
-    const admin = getSupabaseAdminClient()
-
-    const { data: existingCompany } = await admin
-      .from('companies')
-      .select('id')
-      .eq('cnpj', cnpj)
-      .maybeSingle()
-
+    const existingCompany = await findCompanyByCnpjMongo(cnpj)
     if (existingCompany?.id) {
       return errorResponse(409, 'DOMAIN_ERROR', 'Ja existe empresa com este CNPJ.', ['COMPANY_CNPJ_ALREADY_EXISTS'])
     }
 
+    const admin = getSupabaseAdminClient()
     const { data: existingProfile } = await admin
       .from('user_profiles')
       .select('user_id')
@@ -117,22 +116,22 @@ export async function POST(request: Request): Promise<NextResponse> {
       return errorResponse(409, 'DOMAIN_ERROR', 'E-mail de login ja utilizado.', ['PROFILE_LOGIN_EMAIL_ALREADY_EXISTS'])
     }
 
-    const { data: insertedCompany, error: companyError } = await admin
-      .from('companies')
-      .insert({
-        cnpj,
-        razao_social: razaoSocial,
-        nome_fantasia: nomeFantasia || null,
-        status: 'active',
-      })
-      .select('id, cnpj, razao_social, nome_fantasia, status')
-      .single()
+    const companyId = randomUUID()
+    await insertCompanyMongo({
+      id: companyId,
+      cnpj,
+      razao_social: razaoSocial,
+      nome_fantasia: nomeFantasia || null,
+      status: 'active',
+    })
 
-    if (companyError || !insertedCompany) {
-      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao criar empresa.')
-    }
-
-    await mirrorCompanyById(insertedCompany.id, 'insert_company_admin_panel')
+    await backupCompanyToSupabase({
+      id: companyId,
+      cnpj,
+      razao_social: razaoSocial,
+      nome_fantasia: nomeFantasia || null,
+      status: 'active',
+    })
 
     const { data: createdUser, error: userError } = await admin.auth.admin.createUser({
       email: loginEmail,
@@ -143,42 +142,41 @@ export async function POST(request: Request): Promise<NextResponse> {
       },
       user_metadata: {
         role: 'empresa',
-        company_id: insertedCompany.id,
+        company_id: companyId,
       },
     })
 
     if (userError || !createdUser?.user?.id) {
-      await admin.from('companies').delete().eq('id', insertedCompany.id)
       return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao criar usuario autenticado para empresa.')
     }
 
     const companyUserId = createdUser.user.id
-    const { error: profileInsertError } = await admin.from('user_profiles').insert({
+    await insertUserProfileMongo({
       user_id: companyUserId,
       role: 'empresa',
-      company_id: insertedCompany.id,
+      company_id: companyId,
       login_email: loginEmail,
       is_active: true,
     })
 
-    if (profileInsertError) {
-      await admin.auth.admin.deleteUser(companyUserId)
-      await admin.from('companies').delete().eq('id', insertedCompany.id)
-      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao criar perfil de acesso da empresa.')
-    }
-
-    await mirrorUserProfileByUserId(companyUserId, 'insert_user_profile_admin_panel')
+    await backupUserProfileToSupabase({
+      user_id: companyUserId,
+      role: 'empresa',
+      company_id: companyId,
+      login_email: loginEmail,
+      is_active: true,
+    })
 
     return NextResponse.json(
       {
         ok: true,
         data: {
           company: {
-            id: insertedCompany.id,
-            cnpj: insertedCompany.cnpj,
-            razaoSocial: insertedCompany.razao_social,
-            nomeFantasia: insertedCompany.nome_fantasia,
-            status: insertedCompany.status,
+            id: companyId,
+            cnpj,
+            razaoSocial,
+            nomeFantasia: nomeFantasia || null,
+            status: 'active',
           },
           credentials: {
             loginEmail,
@@ -204,11 +202,7 @@ export async function GET(): Promise<NextResponse> {
       return errorResponse(401, 'UNAUTHORIZED', 'Sessao invalida.')
     }
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role, is_active')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    const profile = await getProfileMongoFirst(user.id)
 
     if (!profile?.is_active) {
       return errorResponse(403, 'FORBIDDEN', 'Perfil inativo.')
@@ -218,23 +212,14 @@ export async function GET(): Promise<NextResponse> {
       return errorResponse(403, 'FORBIDDEN', 'Acesso restrito ao admin.')
     }
 
-    const admin = getSupabaseAdminClient()
-    const { data, error } = await admin
-      .from('companies')
-      .select('id, cnpj, razao_social, nome_fantasia, status, created_at')
-      .order('created_at', { ascending: false })
-      .limit(200)
-
-    if (error) {
-      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao listar empresas.')
-    }
+    const data = await listCompaniesMongo(200)
 
     return NextResponse.json(
       {
         ok: true,
         data: {
           companies:
-            data?.map((row) => ({
+            data.map((row) => ({
               id: row.id,
               cnpj: row.cnpj,
               razaoSocial: row.razao_social,

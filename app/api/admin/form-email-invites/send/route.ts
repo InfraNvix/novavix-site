@@ -1,9 +1,17 @@
-import { createHash, randomBytes } from 'node:crypto'
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { sendFormInvite } from '@/lib/email/send-form-invite'
-import { mirrorFormEmailInviteById } from '@/lib/mongodb/mirror/write-through'
+import {
+  backupInviteToSupabase,
+  findRecentPendingInviteMongo,
+  findTemplateActiveByIdMongo,
+  getProfileMongoFirst,
+  insertInviteMongo,
+  updateInviteMongoById,
+} from '@/lib/mongodb/primary-store'
+import { mirrorCompanyFormTemplateById } from '@/lib/mongodb/mirror/write-through'
 
 type ApiErrorCode = 'INVALID_JSON' | 'VALIDATION_ERROR' | 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'CONFLICT' | 'INTERNAL_ERROR'
 
@@ -31,15 +39,6 @@ function normalizeEmail(value: string): string {
   return value.trim().toLowerCase()
 }
 
-function describeDbError(error: unknown): string[] {
-  if (!error || typeof error !== 'object') return []
-  const maybe = error as { code?: string; message?: string; details?: string | null; hint?: string | null }
-  const parts = [maybe.code, maybe.message, maybe.details ?? undefined, maybe.hint ?? undefined].filter(
-    (item): item is string => typeof item === 'string' && item.trim().length > 0
-  )
-  return parts
-}
-
 function describeRuntimeError(error: unknown): string[] {
   if (!error || typeof error !== 'object') {
     if (typeof error === 'string' && error.trim().length > 0) return [error]
@@ -61,7 +60,11 @@ function describeRuntimeError(error: unknown): string[] {
     maybe.response,
     typeof maybe.responseCode === 'number' ? String(maybe.responseCode) : undefined,
   ].filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-  return parts
+  return parts.map((part) =>
+    part
+      .replace(/(invite=)[a-f0-9]{32,}/gi, '$1[REDACTED]')
+      .replace(/(token=)[a-f0-9]{32,}/gi, '$1[REDACTED]')
+  )
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -75,11 +78,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       return errorResponse(401, 'UNAUTHORIZED', 'Sessao invalida.')
     }
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role, is_active')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    const profile = await getProfileMongoFirst(user.id)
 
     if (!profile?.is_active) {
       return errorResponse(403, 'FORBIDDEN', 'Perfil inativo.')
@@ -114,32 +113,26 @@ export async function POST(request: Request): Promise<NextResponse> {
       return errorResponse(422, 'VALIDATION_ERROR', 'Dados invalidos para envio.', errors)
     }
 
-    const admin = getSupabaseAdminClient()
-    const { data: template, error: templateError } = await admin
-      .from('company_form_templates')
-      .select('id, template_name, status')
-      .eq('id', templateId)
-      .eq('status', 'active')
-      .maybeSingle()
-
-    if (templateError || !template?.id) {
+    let template = await findTemplateActiveByIdMongo(templateId)
+    if (!template) {
+      const admin = getSupabaseAdminClient()
+      const { data } = await admin
+        .from('company_form_templates')
+        .select('id, template_name, status')
+        .eq('id', templateId)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (data?.id) {
+        template = data
+        await mirrorCompanyFormTemplateById(data.id, 'fallback_read_template_invite_send')
+      }
+    }
+    if (!template?.id) {
       return errorResponse(404, 'NOT_FOUND', 'Template nao encontrado ou inativo.')
     }
 
     const dedupThreshold = new Date(Date.now() - DEDUP_WINDOW_MINUTES * 60_000).toISOString()
-    const { data: recentPending, error: recentPendingError } = await admin
-      .from('form_email_invites')
-      .select('id, created_at')
-      .eq('template_id', template.id)
-      .eq('recipient_email', recipientEmail)
-      .eq('status', 'pending')
-      .gte('created_at', dedupThreshold)
-      .limit(1)
-      .maybeSingle()
-
-    if (recentPendingError) {
-      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao consultar convites pendentes.', describeDbError(recentPendingError))
-    }
+    const recentPending = await findRecentPendingInviteMongo(template.id, recipientEmail, dedupThreshold)
 
     if (recentPending?.id) {
       return errorResponse(409, 'CONFLICT', 'Ja existe um convite recente para este e-mail e template.')
@@ -149,26 +142,30 @@ export async function POST(request: Request): Promise<NextResponse> {
     const tokenHash = createHash('sha256').update(token).digest('hex')
     const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
 
-    const { data: invite, error: inviteError } = await admin
-      .from('form_email_invites')
-      .insert({
-        template_id: template.id,
-        recipient_email: recipientEmail,
-        token_hash: tokenHash,
-        status: 'pending',
-        expires_at: expiresAt,
-        created_by: user.id,
-        sent_at: null,
-        last_error: null,
-      })
-      .select('id, expires_at, created_at')
-      .single()
-
-    if (inviteError || !invite?.id) {
-      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao registrar convite.', describeDbError(inviteError))
-    }
-
-    await mirrorFormEmailInviteById(invite.id, 'insert_pending')
+    const inviteId = randomUUID()
+    const createdAt = new Date().toISOString()
+    await insertInviteMongo({
+      id: inviteId,
+      template_id: template.id,
+      recipient_email: recipientEmail,
+      token_hash: tokenHash,
+      status: 'pending',
+      expires_at: expiresAt,
+      created_by: user.id,
+      sent_at: null,
+      last_error: null,
+    })
+    await backupInviteToSupabase({
+      id: inviteId,
+      template_id: template.id,
+      recipient_email: recipientEmail,
+      token_hash: tokenHash,
+      status: 'pending',
+      expires_at: expiresAt,
+      created_by: user.id,
+      sent_at: null,
+      last_error: null,
+    })
 
     const formUrl = new URL(`/formularios/${template.id}`, getAppBaseUrl())
     formUrl.searchParams.set('invite', token)
@@ -185,37 +182,38 @@ export async function POST(request: Request): Promise<NextResponse> {
     } catch (mailError) {
       const runtimeDetails = describeRuntimeError(mailError)
       const lastError = runtimeDetails.join(' | ').slice(0, 4000)
-      await admin
-        .from('form_email_invites')
-        .update({
-          status: 'revoked',
-          last_error: lastError || 'EMAIL_SEND_FAILED',
-        })
-        .eq('id', invite.id)
-      await mirrorFormEmailInviteById(invite.id, 'update_revoked_after_email_failure')
+      await updateInviteMongoById(inviteId, {
+        status: 'revoked',
+        last_error: lastError || 'EMAIL_SEND_FAILED',
+      })
+      await backupInviteToSupabase({
+        id: inviteId,
+        status: 'revoked',
+        last_error: lastError || 'EMAIL_SEND_FAILED',
+      })
       return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao enviar e-mail de convite.', runtimeDetails)
     }
 
     const sentAt = new Date().toISOString()
-    await admin
-      .from('form_email_invites')
-      .update({
-        sent_at: sentAt,
-        last_error: null,
-      })
-      .eq('id', invite.id)
-
-    await mirrorFormEmailInviteById(invite.id, 'insert_or_update_sent')
+    await updateInviteMongoById(inviteId, {
+      sent_at: sentAt,
+      last_error: null,
+    })
+    await backupInviteToSupabase({
+      id: inviteId,
+      sent_at: sentAt,
+      last_error: null,
+    })
 
     return NextResponse.json(
       {
         ok: true,
         data: {
-          inviteId: invite.id,
+          inviteId,
           templateId: template.id,
           recipientEmail,
-          expiresAt: invite.expires_at,
-          createdAt: invite.created_at,
+          expiresAt,
+          createdAt,
           sentAt,
         },
       },

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
+import { getProfileMongoFirst, listTemplatesMongo } from '@/lib/mongodb/primary-store'
 
 type ApiErrorCode = 'UNAUTHORIZED' | 'FORBIDDEN' | 'INTERNAL_ERROR' | 'VALIDATION_ERROR' | 'NOT_FOUND'
 
@@ -29,11 +30,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return errorResponse(401, 'UNAUTHORIZED', 'Sessao invalida.')
     }
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role, is_active')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    const profile = await getProfileMongoFirst(user.id)
 
     if (!profile?.is_active) {
       return errorResponse(403, 'FORBIDDEN', 'Perfil inativo.')
@@ -46,28 +43,14 @@ export async function GET(request: Request): Promise<NextResponse> {
     const url = new URL(request.url)
     const companyId = (url.searchParams.get('companyId') ?? '').trim()
 
-    const admin = getSupabaseAdminClient()
-    let query = admin
-      .from('company_form_templates')
-      .select('id, company_id, template_name, source_format, source_file_name, status, created_at')
-      .order('created_at', { ascending: false })
-      .limit(200)
-
-    if (companyId.length > 0) {
-      query = query.eq('company_id', companyId)
-    }
-
-    const { data, error } = await query
-    if (error) {
-      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao listar templates.')
-    }
+    const data = await listTemplatesMongo(companyId.length > 0 ? companyId : undefined)
 
     return NextResponse.json(
       {
         ok: true,
         data: {
           templates:
-            data?.map((row) => ({
+            data.map((row) => ({
               id: row.id,
               companyId: row.company_id,
               templateName: row.template_name,
@@ -75,7 +58,7 @@ export async function GET(request: Request): Promise<NextResponse> {
               sourceFileName: row.source_file_name,
               status: row.status,
               createdAt: row.created_at,
-            })) ?? [],
+            })),
         },
       },
       { status: 200 }

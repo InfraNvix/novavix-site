@@ -1,10 +1,19 @@
 import { NextResponse } from 'next/server'
-import { createHash } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { normalizeCnpj, isValidCnpjFormat } from '@/lib/auth/cnpj'
 import type { FormTemplateSchema } from '@/lib/forms/parser'
 import { validateSubmissionAnswers } from '@/lib/forms/runtime'
-import { mirrorCompanyFormSubmissionById, mirrorFormEmailInviteById } from '@/lib/mongodb/mirror/write-through'
+import {
+  backupInviteToSupabase,
+  backupSubmissionToSupabase,
+  findCompanyByCnpjMongo,
+  findInviteByTokenHashMongo,
+  findTemplateActiveByIdMongo,
+  insertSubmissionMongo,
+  updateInviteMongoById,
+} from '@/lib/mongodb/primary-store'
+import { mirrorCompanyById, mirrorFormEmailInviteById, mirrorCompanyFormTemplateById } from '@/lib/mongodb/mirror/write-through'
 
 type ApiErrorCode = 'INVALID_JSON' | 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR'
 
@@ -63,22 +72,22 @@ export async function POST(
       return errorResponse(422, 'VALIDATION_ERROR', 'E-mail do respondente invalido.')
     }
 
+    let templateData = await findTemplateActiveByIdMongo(templateId)
     const admin = getSupabaseAdminClient()
-    const { data: templateData, error: templateError } = await admin
-      .from('company_form_templates')
-      .select(
-        `
-        id,
-        template_name,
-        schema_json,
-        status
-      `
-      )
-      .eq('id', templateId)
-      .eq('status', 'active')
-      .maybeSingle()
+    if (!templateData) {
+      const { data } = await admin
+        .from('company_form_templates')
+        .select('id, template_name, schema_json, status')
+        .eq('id', templateId)
+        .eq('status', 'active')
+        .maybeSingle()
+      if (data?.id) {
+        templateData = data
+        await mirrorCompanyFormTemplateById(data.id, 'fallback_read_template_submit')
+      }
+    }
 
-    if (templateError || !templateData?.id) {
+    if (!templateData?.id) {
       return errorResponse(404, 'NOT_FOUND', 'Template nao encontrado.')
     }
 
@@ -106,13 +115,20 @@ export async function POST(
 
     if (inviteToken) {
       const tokenHash = createHash('sha256').update(inviteToken).digest('hex')
-      const { data: invite, error: inviteError } = await admin
-        .from('form_email_invites')
-        .select('id, template_id, status, expires_at, used_at')
-        .eq('token_hash', tokenHash)
-        .maybeSingle()
+      let invite = await findInviteByTokenHashMongo(tokenHash)
+      if (!invite) {
+        const { data } = await admin
+          .from('form_email_invites')
+          .select('id, template_id, status, expires_at, used_at')
+          .eq('token_hash', tokenHash)
+          .maybeSingle()
+        if (data?.id) {
+          invite = data
+          await mirrorFormEmailInviteById(data.id, 'fallback_read_invite_submit')
+        }
+      }
 
-      if (inviteError || !invite?.id) {
+      if (!invite?.id) {
         return errorResponse(404, 'NOT_FOUND', 'Convite invalido.')
       }
       if (invite.template_id !== templateData.id) {
@@ -126,8 +142,8 @@ export async function POST(
       }
       if (Date.now() > new Date(invite.expires_at).getTime()) {
         if (invite.status === 'pending') {
-          await admin.from('form_email_invites').update({ status: 'expired' }).eq('id', invite.id)
-          await mirrorFormEmailInviteById(invite.id, 'update_expired_on_submit')
+          await updateInviteMongoById(invite.id, { status: 'expired' })
+          await backupInviteToSupabase({ id: invite.id, status: 'expired' })
         }
         return errorResponse(422, 'VALIDATION_ERROR', 'Este convite expirou.')
       }
@@ -140,14 +156,21 @@ export async function POST(
         return errorResponse(422, 'VALIDATION_ERROR', 'Selecione o colaborador.')
       }
 
-      const { data: company, error: companyError } = await admin
-        .from('companies')
-        .select('id, cnpj, status')
-        .eq('cnpj', cnpj)
-        .eq('status', 'active')
-        .maybeSingle()
+      let company = await findCompanyByCnpjMongo(cnpj)
+      if (!company) {
+        const { data } = await admin
+          .from('companies')
+          .select('id, cnpj, status')
+          .eq('cnpj', cnpj)
+          .eq('status', 'active')
+          .maybeSingle()
+        if (data?.id) {
+          company = data
+          await mirrorCompanyById(data.id, 'fallback_read_company_submit')
+        }
+      }
 
-      if (companyError || !company?.id) {
+      if (!company?.id) {
         return errorResponse(404, 'NOT_FOUND', 'Empresa nao encontrada para este CNPJ.')
       }
       companyId = company.id
@@ -175,46 +198,45 @@ export async function POST(
       }
     }
 
-    const { data: inserted, error: insertError } = await admin
-      .from('company_form_submissions')
-      .insert({
-        template_id: templateData.id,
-        company_id: companyId,
-        collaborator_id: collaboratorInsert.id,
-        collaborator_external_employee_id: collaboratorInsert.externalEmployeeId,
-        collaborator_name: collaboratorInsert.fullName,
-        invite_id: inviteId,
-        respondent_name: respondentName || collaboratorInsert.fullName || null,
-        respondent_email: respondentEmail || null,
-        answers_json: validated.normalizedAnswers,
-      })
-      .select('id, created_at')
-      .single()
+    const submissionId = randomUUID()
+    const submissionPayload = {
+      id: submissionId,
+      template_id: templateData.id,
+      company_id: companyId,
+      collaborator_id: collaboratorInsert.id,
+      collaborator_external_employee_id: collaboratorInsert.externalEmployeeId,
+      collaborator_name: collaboratorInsert.fullName,
+      invite_id: inviteId,
+      respondent_name: respondentName || collaboratorInsert.fullName || null,
+      respondent_email: respondentEmail || null,
+      answers_json: validated.normalizedAnswers,
+    }
+    await insertSubmissionMongo({
+      id: submissionId,
+      template_id: submissionPayload.template_id,
+      company_id: submissionPayload.company_id,
+      respondent_name: submissionPayload.respondent_name,
+      respondent_email: submissionPayload.respondent_email,
+      answers_json: submissionPayload.answers_json,
+      invite_id: submissionPayload.invite_id,
+    })
+    await backupSubmissionToSupabase(submissionPayload)
 
-    if (insertError || !inserted?.id) {
-      if (inviteId && insertError && typeof insertError === 'object' && 'code' in insertError && insertError.code === '23505') {
-        return errorResponse(422, 'VALIDATION_ERROR', 'Este convite ja foi utilizado.')
-      }
-      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao salvar respostas.')
+    const inserted = {
+      id: submissionId,
+      created_at: new Date().toISOString(),
     }
 
-    await mirrorCompanyFormSubmissionById(inserted.id, 'insert_form_submission')
-
     if (inviteId) {
-      const { error: inviteUpdateError } = await admin
-        .from('form_email_invites')
-        .update({
-          status: 'used',
-          used_at: new Date().toISOString(),
-        })
-        .eq('id', inviteId)
-        .eq('status', 'pending')
-
-      if (inviteUpdateError) {
-        return errorResponse(500, 'INTERNAL_ERROR', 'Resposta salva, mas nao foi possivel finalizar o convite.')
-      }
-
-      await mirrorFormEmailInviteById(inviteId, 'update_used_on_submit')
+      await updateInviteMongoById(inviteId, {
+        status: 'used',
+        used_at: new Date().toISOString(),
+      })
+      await backupInviteToSupabase({
+        id: inviteId,
+        status: 'used',
+        used_at: new Date().toISOString(),
+      })
     }
 
     return NextResponse.json(

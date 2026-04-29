@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
+import { backupInviteToSupabase, findInviteByTokenHashMongo, findTemplateActiveByIdMongo, updateInviteMongoById } from '@/lib/mongodb/primary-store'
 import { mirrorFormEmailInviteById } from '@/lib/mongodb/mirror/write-through'
 
 type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'FORBIDDEN' | 'INTERNAL_ERROR'
@@ -22,14 +23,21 @@ export async function GET(request: Request): Promise<NextResponse> {
     }
 
     const tokenHash = createHash('sha256').update(inviteToken).digest('hex')
-    const admin = getSupabaseAdminClient()
-    const { data: invite, error } = await admin
-      .from('form_email_invites')
-      .select('id, template_id, status, expires_at, used_at')
-      .eq('token_hash', tokenHash)
-      .maybeSingle()
+    let invite = await findInviteByTokenHashMongo(tokenHash)
+    if (!invite) {
+      const admin = getSupabaseAdminClient()
+      const { data } = await admin
+        .from('form_email_invites')
+        .select('id, template_id, status, expires_at, used_at')
+        .eq('token_hash', tokenHash)
+        .maybeSingle()
+      if (data?.id) {
+        invite = data
+        await mirrorFormEmailInviteById(data.id, 'fallback_read_invite_validate')
+      }
+    }
 
-    if (error || !invite?.id) {
+    if (!invite?.id) {
       return errorResponse(404, 'NOT_FOUND', 'Convite invalido.')
     }
 
@@ -38,10 +46,11 @@ export async function GET(request: Request): Promise<NextResponse> {
     const isExpired = now > expiresAtMs
     const isUsed = invite.status === 'used' || Boolean(invite.used_at)
     const isRevoked = invite.status === 'revoked'
+    const isFailed = invite.status === 'failed'
 
     if (isExpired && invite.status === 'pending') {
-      await admin.from('form_email_invites').update({ status: 'expired' }).eq('id', invite.id)
-      await mirrorFormEmailInviteById(invite.id, 'update_expired_on_validate')
+      await updateInviteMongoById(invite.id, { status: 'expired' })
+      await backupInviteToSupabase({ id: invite.id, status: 'expired' })
     }
 
     if (isUsed) {
@@ -50,16 +59,14 @@ export async function GET(request: Request): Promise<NextResponse> {
     if (isRevoked) {
       return errorResponse(403, 'FORBIDDEN', 'Este convite foi revogado.')
     }
+    if (isFailed) {
+      return errorResponse(403, 'FORBIDDEN', 'Este convite nao esta mais disponivel.')
+    }
     if (isExpired) {
       return errorResponse(403, 'FORBIDDEN', 'Este link expirou.')
     }
 
-    const { data: template } = await admin
-      .from('company_form_templates')
-      .select('id, template_name, status')
-      .eq('id', invite.template_id)
-      .eq('status', 'active')
-      .maybeSingle()
+    const template = await findTemplateActiveByIdMongo(invite.template_id)
 
     if (!template?.id) {
       return errorResponse(404, 'NOT_FOUND', 'Template do convite nao encontrado.')

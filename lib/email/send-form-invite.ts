@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
 type SendFormInviteInput = {
   to: string
@@ -9,9 +9,9 @@ type SendFormInviteInput = {
   subject?: string | null
 }
 
-let cachedTransporter: nodemailer.Transporter | null = null
+let cachedResend: Resend | null = null
 
-function getRequiredEnv(name: 'GMAIL_USER' | 'GMAIL_APP_PASSWORD'): string {
+function getRequiredEnv(name: 'RESEND_API_KEY' | 'EMAIL_FROM'): string {
   const value = process.env[name]
   if (!value || value.trim().length === 0) {
     throw new Error(`MISSING_${name}`)
@@ -19,26 +19,17 @@ function getRequiredEnv(name: 'GMAIL_USER' | 'GMAIL_APP_PASSWORD'): string {
   return value.trim()
 }
 
-function getTransporter(): nodemailer.Transporter {
-  if (cachedTransporter) {
-    return cachedTransporter
+function getResendClient(): Resend {
+  if (cachedResend) {
+    return cachedResend
   }
 
-  cachedTransporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-      user: getRequiredEnv('GMAIL_USER'),
-      pass: getRequiredEnv('GMAIL_APP_PASSWORD'),
-    },
-  })
-
-  return cachedTransporter
+  cachedResend = new Resend(getRequiredEnv('RESEND_API_KEY'))
+  return cachedResend
 }
 
 export async function sendFormInvite(input: SendFormInviteInput): Promise<{ messageId: string | null }> {
-  const fromAddress = getRequiredEnv('GMAIL_USER')
+  const fromAddress = getRequiredEnv('EMAIL_FROM')
   const collaboratorDisplayName = input.collaboratorName?.trim() || 'colaborador(a)'
   const hasExpiry = typeof input.expiresAtIso === 'string' && input.expiresAtIso.trim().length > 0
   const expiryText = hasExpiry
@@ -74,15 +65,20 @@ export async function sendFormInvite(input: SendFormInviteInput): Promise<{ mess
     <p>Se voce nao reconhece este convite, ignore este email.</p>
   `
 
-  const info = await getTransporter().sendMail({
-    from: `"Novavix" <${fromAddress}>`,
+  const resend = getResendClient()
+  const result = await resend.emails.send({
+    from: fromAddress,
     to: input.to,
     subject,
     text: textBody,
     html: htmlBody,
   })
 
+  if (result.error) {
+    throw new Error(`RESEND_SEND_FAILED:${result.error.name}:${result.error.message}`)
+  }
+
   return {
-    messageId: info.messageId ?? null,
+    messageId: result.data?.id ?? null,
   }
 }
