@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createHash, randomUUID } from 'node:crypto'
+import { checkRateLimit } from '@/lib/security/rate-limit'
+import { getClientIp } from '@/lib/security/http'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { normalizeCnpj, isValidCnpjFormat } from '@/lib/auth/cnpj'
 import type { FormTemplateSchema } from '@/lib/forms/parser'
@@ -15,7 +17,7 @@ import {
 } from '@/lib/mongodb/primary-store'
 import { mirrorCompanyById, mirrorFormEmailInviteById, mirrorCompanyFormTemplateById } from '@/lib/mongodb/mirror/write-through'
 
-type ApiErrorCode = 'INVALID_JSON' | 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR'
+type ApiErrorCode = 'INVALID_JSON' | 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR' | 'TOO_MANY_REQUESTS'
 
 function errorResponse(status: number, code: ApiErrorCode, message: string, details?: string[]): NextResponse {
   return NextResponse.json(
@@ -40,6 +42,27 @@ export async function POST(
   context: { params: { templateId: string } }
 ): Promise<NextResponse> {
   try {
+    const ip = getClientIp(request)
+    const rateLimit = await checkRateLimit(`forms-submit:${ip}`, { limit: 30, windowMs: 60_000 })
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { ok: false, error: { code: 'TOO_MANY_REQUESTS', message: 'Muitas requisicoes. Tente novamente em instantes.' } },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimit.retryAfterSec),
+            'X-RateLimit-Limit': String(rateLimit.limit),
+            'X-RateLimit-Remaining': String(rateLimit.remaining),
+          },
+        }
+      )
+    }
+
+    const contentLength = Number(request.headers.get('content-length') ?? '0')
+    if (Number.isFinite(contentLength) && contentLength > 120_000) {
+      return errorResponse(413, 'VALIDATION_ERROR', 'Payload muito grande.')
+    }
+
     const templateId = (context.params.templateId ?? '').trim()
     if (!templateId) {
       return errorResponse(422, 'VALIDATION_ERROR', 'templateId obrigatorio.')
@@ -113,6 +136,8 @@ export async function POST(
     }
     let inviteId: string | null = null
 
+    let inviteUsedAtIso: string | null = null
+
     if (inviteToken) {
       const tokenHash = createHash('sha256').update(inviteToken).digest('hex')
       let invite = await findInviteByTokenHashMongo(tokenHash)
@@ -148,6 +173,23 @@ export async function POST(
         return errorResponse(422, 'VALIDATION_ERROR', 'Este convite expirou.')
       }
       inviteId = invite.id
+
+      inviteUsedAtIso = new Date().toISOString()
+      const { data: consumedInvite } = await admin
+        .from('form_email_invites')
+        .update({
+          status: 'used',
+          used_at: inviteUsedAtIso,
+        })
+        .eq('id', inviteId)
+        .eq('status', 'pending')
+        .is('used_at', null)
+        .select('id')
+        .maybeSingle()
+
+      if (!consumedInvite?.id) {
+        return errorResponse(409, 'VALIDATION_ERROR', 'Este convite ja foi utilizado.')
+      }
     } else {
       if (!isValidCnpjFormat(cnpj)) {
         return errorResponse(422, 'VALIDATION_ERROR', 'CNPJ invalido.')
@@ -227,15 +269,15 @@ export async function POST(
       created_at: new Date().toISOString(),
     }
 
-    if (inviteId) {
+    if (inviteId && inviteUsedAtIso) {
       await updateInviteMongoById(inviteId, {
         status: 'used',
-        used_at: new Date().toISOString(),
+        used_at: inviteUsedAtIso,
       })
       await backupInviteToSupabase({
         id: inviteId,
         status: 'used',
-        used_at: new Date().toISOString(),
+        used_at: inviteUsedAtIso,
       })
     }
 

@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { checkRateLimit } from '@/lib/security/rate-limit'
+import { getClientIp } from '@/lib/security/http'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { backupInviteToSupabase, findInviteByTokenHashMongo, findTemplateActiveByIdMongo, updateInviteMongoById } from '@/lib/mongodb/primary-store'
 import { mirrorFormEmailInviteById } from '@/lib/mongodb/mirror/write-through'
@@ -16,6 +18,22 @@ function asTrimmed(value: unknown): string {
 
 export async function GET(request: Request): Promise<NextResponse> {
   try {
+    const ip = getClientIp(request)
+    const rateLimit = await checkRateLimit(`forms-invite-validate:${ip}`, { limit: 60, windowMs: 60_000 })
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { ok: false, error: { code: 'TOO_MANY_REQUESTS', message: 'Muitas requisicoes. Tente novamente em instantes.' } },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimit.retryAfterSec),
+            'X-RateLimit-Limit': String(rateLimit.limit),
+            'X-RateLimit-Remaining': String(rateLimit.remaining),
+          },
+        }
+      )
+    }
+
     const url = new URL(request.url)
     const inviteToken = asTrimmed(url.searchParams.get('invite'))
     if (!inviteToken) {

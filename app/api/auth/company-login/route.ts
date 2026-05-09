@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { isDemoCnpj } from '@/lib/auth/cnpj'
-import { DEMO_COMPANY_AUTH, DEMO_MODE_ENABLED } from '@/lib/auth/demo'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getClientIp } from '@/lib/security/http'
 import { checkRateLimit } from '@/lib/security/rate-limit'
@@ -81,26 +79,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     const parsed = parseCompanyLoginPayload(body)
     if (!parsed.success) {
       return errorResponse(422, 'VALIDATION_ERROR', 'Dados de login invalidos.', parsed.errors)
-    }
-
-    if (DEMO_MODE_ENABLED) {
-      const validDemoCnpj = isDemoCnpj(parsed.data.cnpj)
-      const validDemoPassword = parsed.data.password === DEMO_COMPANY_AUTH.password
-
-      if (!validDemoCnpj || !validDemoPassword) {
-        return errorResponse(401, 'AUTH_FAILED', 'Credenciais demo invalidas.')
-      }
-
-      return NextResponse.json(
-        {
-          ok: true,
-          data: {
-            email: DEMO_COMPANY_AUTH.email,
-            role: 'empresa',
-          },
-        },
-        { status: 200 }
-      )
     }
 
     const admin = getSupabaseAdminClient()

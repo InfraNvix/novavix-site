@@ -1,5 +1,3 @@
-import { DEMO_COMPANY_AUTH } from '@/lib/auth/demo'
-
 export function normalizeCnpj(value: string): string {
   return value.replace(/\D/g, '')
 }
@@ -25,8 +23,4 @@ export function isValidCnpjFormat(value: string): boolean {
   const secondDigit = calcDigit([...digits.slice(0, 12), firstDigit], [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2])
 
   return firstDigit === digits[12] && secondDigit === digits[13]
-}
-
-export function isDemoCnpj(value: string): boolean {
-  return normalizeCnpj(value) === DEMO_COMPANY_AUTH.cnpj
 }

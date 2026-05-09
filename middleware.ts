@@ -1,10 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import {
-  DEMO_AUTH_COOKIE_NAME,
-  DEMO_MODE_ENABLED,
-  getDemoRoleFromCookieValue,
-} from './lib/auth/demo'
-import {
   DEFAULT_AUTH_REDIRECT,
   isAdminRoute,
   isAuthPage,
@@ -15,59 +10,37 @@ import {
 } from './lib/auth/guards'
 import { updateSession } from './lib/supabase/middleware'
 import { isUserRole, type UserRole } from './lib/auth/roles'
-import { applySecurityHeaders } from './lib/security/http'
+import { applyCorsHeaders, applySecurityHeaders } from './lib/security/http'
+import { validateRequiredEnv } from './lib/env/required'
 
-function withSessionCookies(source: NextResponse, target: NextResponse): NextResponse {
+function applyHttpHeaders(target: NextResponse, request: NextRequest): NextResponse {
+  const withSecurity = applySecurityHeaders(target)
+  return applyCorsHeaders(withSecurity, request)
+}
+
+function withSessionCookies(source: NextResponse, target: NextResponse, request: NextRequest): NextResponse {
   for (const cookie of source.cookies.getAll()) {
     target.cookies.set(cookie)
   }
-  return applySecurityHeaders(target)
+  return applyHttpHeaders(target, request)
 }
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
+  validateRequiredEnv()
+
   const { pathname, search } = request.nextUrl
 
+  if (request.method === 'OPTIONS' && pathname.startsWith('/api')) {
+    return applyHttpHeaders(new NextResponse(null, { status: 204 }), request)
+  }
+
   if (isStaticAsset(pathname)) {
-    return applySecurityHeaders(NextResponse.next())
+    return applyHttpHeaders(NextResponse.next(), request)
   }
 
   const needsSessionCheck = isProtectedRoute(pathname) || isAuthPage(pathname)
   if (!needsSessionCheck) {
-    return applySecurityHeaders(NextResponse.next())
-  }
-
-  if (DEMO_MODE_ENABLED) {
-    const demoRole = getDemoRoleFromCookieValue(request.cookies.get(DEMO_AUTH_COOKIE_NAME)?.value)
-
-    if (isProtectedRoute(pathname) && !demoRole) {
-      const loginUrl = request.nextUrl.clone()
-      loginUrl.pathname = '/login'
-      loginUrl.searchParams.set('next', `${pathname}${search}`)
-      return applySecurityHeaders(NextResponse.redirect(loginUrl))
-    }
-
-    if (demoRole && isAdminRoute(pathname) && demoRole !== 'admin') {
-      const target = request.nextUrl.clone()
-      target.pathname = demoRole === 'clinica' ? '/clinic' : DEFAULT_AUTH_REDIRECT
-      target.search = ''
-      return applySecurityHeaders(NextResponse.redirect(target))
-    }
-
-    if (demoRole && isClinicRoute(pathname) && demoRole !== 'clinica' && demoRole !== 'admin') {
-      const target = request.nextUrl.clone()
-      target.pathname = DEFAULT_AUTH_REDIRECT
-      target.search = ''
-      return applySecurityHeaders(NextResponse.redirect(target))
-    }
-
-    if (demoRole && isCompanyRoute(pathname) && (demoRole === 'admin' || demoRole === 'clinica')) {
-      const adminUrl = request.nextUrl.clone()
-      adminUrl.pathname = demoRole === 'clinica' ? '/clinic' : '/admin'
-      adminUrl.search = ''
-      return applySecurityHeaders(NextResponse.redirect(adminUrl))
-    }
-
-    return applySecurityHeaders(NextResponse.next())
+    return applyHttpHeaders(NextResponse.next(), request)
   }
 
   const { supabase, response } = updateSession(request)
@@ -79,7 +52,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/login'
     loginUrl.searchParams.set('next', `${pathname}${search}`)
-    return withSessionCookies(response, NextResponse.redirect(loginUrl))
+    return withSessionCookies(response, NextResponse.redirect(loginUrl), request)
   }
 
   let role: UserRole | null = null
@@ -97,26 +70,26 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     const target = request.nextUrl.clone()
     target.pathname = role === 'clinica' ? '/clinic' : DEFAULT_AUTH_REDIRECT
     target.search = ''
-    return withSessionCookies(response, NextResponse.redirect(target))
+    return withSessionCookies(response, NextResponse.redirect(target), request)
   }
 
   if (user && isClinicRoute(pathname) && role !== 'clinica' && role !== 'admin') {
     const target = request.nextUrl.clone()
     target.pathname = DEFAULT_AUTH_REDIRECT
     target.search = ''
-    return withSessionCookies(response, NextResponse.redirect(target))
+    return withSessionCookies(response, NextResponse.redirect(target), request)
   }
 
   if (user && isCompanyRoute(pathname) && role === 'clinica') {
     const adminUrl = request.nextUrl.clone()
     adminUrl.pathname = '/clinic'
     adminUrl.search = ''
-    return withSessionCookies(response, NextResponse.redirect(adminUrl))
+    return withSessionCookies(response, NextResponse.redirect(adminUrl), request)
   }
 
-  return applySecurityHeaders(response)
+  return applyHttpHeaders(response, request)
 }
 
 export const config = {
-  matcher: ['/login', '/dashboard/:path*', '/portal/:path*', '/admin/:path*', '/clinic/:path*'],
+  matcher: ['/api/:path*', '/login', '/dashboard/:path*', '/portal/:path*', '/admin/:path*', '/clinic/:path*'],
 }

@@ -5,7 +5,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { normalizeCnpj } from '@/lib/auth/cnpj'
-import { DEMO_MODE_ENABLED } from '@/lib/auth/demo'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
 export default function LoginPage() {
@@ -18,7 +17,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
 
   const router = useRouter()
-  const getSupabase = () => (DEMO_MODE_ENABLED ? null : getSupabaseBrowserClient())
+  const getSupabase = () => getSupabaseBrowserClient()
 
   const azulNovavix = '#1E3A5F'
 
@@ -27,79 +26,7 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    if (DEMO_MODE_ENABLED) {
-      if (mode === 'admin') {
-        const response = await fetch('/api/auth/demo-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mode: 'admin',
-            email: adminEmail,
-            password,
-          }),
-        })
-
-        if (!response.ok) {
-          setError('Credenciais demo invalidas.')
-          setLoading(false)
-          return
-        }
-
-        router.push('/admin')
-        router.refresh()
-        return
-      }
-
-      if (mode === 'clinica') {
-        const response = await fetch('/api/auth/demo-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mode: 'clinica',
-            email: clinicEmail,
-            password,
-          }),
-        })
-
-        if (!response.ok) {
-          setError('Credenciais demo invalidas.')
-          setLoading(false)
-          return
-        }
-
-        router.push('/clinic')
-        router.refresh()
-        return
-      }
-
-      const normalizedCnpj = normalizeCnpj(cnpj)
-      const response = await fetch('/api/auth/demo-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'empresa',
-          cnpj: normalizedCnpj,
-          password,
-        }),
-      })
-
-      if (!response.ok) {
-        setError('Credenciais demo invalidas.')
-        setLoading(false)
-        return
-      }
-
-      router.push('/dashboard')
-      router.refresh()
-      return
-    }
-
     const supabase = getSupabase()
-    if (!supabase) {
-      setError('Cliente de autenticacao indisponivel.')
-      setLoading(false)
-      return
-    }
 
     if (mode === 'admin') {
       if (!adminEmail) {
@@ -119,7 +46,7 @@ export default function LoginPage() {
         return
       }
 
-      router.push(DEMO_MODE_ENABLED ? '/admin' : '/dashboard')
+      router.push('/dashboard')
       router.refresh()
       return
     }
@@ -210,9 +137,6 @@ export default function LoginPage() {
           <div className="text-center mb-8">
             <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Portal NOVAVIX GO</h1>
             <p className="text-[13px] text-slate-500 mt-2 font-medium">Gestao Tecnica Ocupacional</p>
-            {DEMO_MODE_ENABLED ? (
-              <p className="text-[11px] text-amber-600 mt-2 font-bold">Ambiente Demo Ativo</p>
-            ) : null}
           </div>
 
           <div className="mb-4 grid grid-cols-3 rounded-xl border border-slate-200 bg-slate-50 p-1 gap-1">

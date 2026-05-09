@@ -5,8 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node -e \"const {spawn}=require('node:child_process');const port=process.env.PORT||'3000';const host=process.env.HOSTNAME||'0.0.0.0';const bin=process.platform==='win32'?'npx.cmd':'npx';const p=spawn(bin,['next','start','-p',port,'-H',host],{stdio:'inherit',shell:false});p.on('exit',(c)=>process.exit(c??0));\"",
+    "start:standalone": "node .next/standalone/server.js",
     "lint": "next lint"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@supabase/ssr": "^0.1.0",

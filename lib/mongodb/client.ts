@@ -1,6 +1,6 @@
 import { MongoClient, type Db } from 'mongodb'
 
-const defaultDbName = process.env.MONGODB_DB_NAME ?? 'novavix'
+const defaultDbName = process.env.MONGODB_DB_NAME
 
 type MongoGlobal = typeof globalThis & {
   __novavixMongoClient?: MongoClient
@@ -27,6 +27,9 @@ function getMongoClient(): MongoClient {
 }
 
 export async function getMongoDb(dbName = defaultDbName): Promise<Db> {
+  if (!dbName || dbName.trim().length === 0) {
+    throw new Error('Missing required environment variable: MONGODB_DB_NAME')
+  }
   const client = getMongoClient()
   await client.connect()
   return client.db(dbName)

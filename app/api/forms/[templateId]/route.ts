@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { FormTemplateSchema } from '@/lib/forms/parser'
+import { checkRateLimit } from '@/lib/security/rate-limit'
+import { getClientIp } from '@/lib/security/http'
 
-type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR'
+type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR' | 'TOO_MANY_REQUESTS'
 
 function errorResponse(status: number, code: ApiErrorCode, message: string, details?: string[]): NextResponse {
   return NextResponse.json(
@@ -23,6 +25,22 @@ export async function GET(
   context: { params: { templateId: string } }
 ): Promise<NextResponse> {
   try {
+    const ip = getClientIp(request)
+    const rateLimit = await checkRateLimit(`forms-template-read:${ip}`, { limit: 120, windowMs: 60_000 })
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { ok: false, error: { code: 'TOO_MANY_REQUESTS', message: 'Muitas requisicoes. Tente novamente em instantes.' } },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimit.retryAfterSec),
+            'X-RateLimit-Limit': String(rateLimit.limit),
+            'X-RateLimit-Remaining': String(rateLimit.remaining),
+          },
+        }
+      )
+    }
+
     const templateId = (context.params.templateId ?? '').trim()
     if (!templateId) {
       return errorResponse(422, 'VALIDATION_ERROR', 'templateId obrigatorio.')

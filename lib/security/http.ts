@@ -1,14 +1,14 @@
 import type { NextRequest, NextResponse } from 'next/server'
 
 export function getClientIp(request: Request | NextRequest): string {
-  const forwardedFor = request.headers.get('x-forwarded-for')
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0]?.trim() || 'unknown'
-  }
-
   const realIp = request.headers.get('x-real-ip')
   if (realIp) {
     return realIp.trim()
+  }
+
+  const forwardedFor = request.headers.get('x-forwarded-for')
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0]?.trim() || 'unknown'
   }
 
   return 'unknown'
@@ -22,8 +22,8 @@ export function applySecurityHeaders(response: NextResponse): NextResponse {
 
   const scriptSrc =
     process.env.NODE_ENV === 'production'
-      ? "script-src 'self' 'unsafe-inline' https:"
-      : "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:"
+      ? "script-src 'self'"
+      : "script-src 'self' 'unsafe-eval'"
 
   response.headers.set(
     'Content-Security-Policy',
@@ -44,6 +44,28 @@ export function applySecurityHeaders(response: NextResponse): NextResponse {
 
   if (process.env.NODE_ENV === 'production') {
     response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  }
+
+  return response
+}
+
+export function applyCorsHeaders(response: NextResponse, request: Request | NextRequest): NextResponse {
+  const frontendUrl = process.env.FRONTEND_URL?.trim()
+  const requestOrigin = request.headers.get('origin')?.trim()
+
+  if (!frontendUrl) {
+    return response
+  }
+
+  response.headers.set('Vary', 'Origin')
+  response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key')
+  response.headers.set('Access-Control-Allow-Credentials', 'true')
+
+  if (requestOrigin && requestOrigin === frontendUrl) {
+    response.headers.set('Access-Control-Allow-Origin', requestOrigin)
+  } else {
+    response.headers.set('Access-Control-Allow-Origin', frontendUrl)
   }
 
   return response

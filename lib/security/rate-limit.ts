@@ -107,6 +107,10 @@ async function getUpstashLimiter(options: RateLimitOptions): Promise<UpstashLimi
   return limiter
 }
 
+function isProduction(): boolean {
+  return process.env.NODE_ENV === 'production'
+}
+
 function checkRateLimitInMemory(key: string, options: RateLimitOptions): RateLimitResult {
   cleanup()
   enforceStoreCapacity()
@@ -143,6 +147,11 @@ function checkRateLimitInMemory(key: string, options: RateLimitOptions): RateLim
 export async function checkRateLimit(key: string, options: RateLimitOptions): Promise<RateLimitResult> {
   const safeOptions = normalizeOptions(options)
   const safeKey = normalizeKey(key)
+  const hasRedis = Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+
+  if (isProduction() && !hasRedis) {
+    throw new Error('RATE_LIMIT_REDIS_REQUIRED_IN_PRODUCTION')
+  }
 
   try {
     const limiter = await getUpstashLimiter(safeOptions)
@@ -157,7 +166,10 @@ export async function checkRateLimit(key: string, options: RateLimitOptions): Pr
       }
     }
   } catch {
-    // Fallback to in-memory limiter when Redis is unavailable.
+    if (isProduction()) {
+      throw new Error('RATE_LIMIT_REDIS_UNAVAILABLE_IN_PRODUCTION')
+    }
+    // Fallback to in-memory limiter when Redis is unavailable in non-production.
   }
 
   return checkRateLimitInMemory(safeKey, safeOptions)

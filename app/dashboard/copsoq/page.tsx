@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import { getCopsoqGroupAggregate } from '@/lib/copsoq/services/group-aggregate'
 import { getCopsoqIndividualProfile } from '@/lib/copsoq/services/get-individual-profile'
 import { getCopsoqMinRespondentsThreshold } from '@/lib/copsoq/auth/access'
-import { DEMO_MODE_ENABLED, DEMO_COMPANIES } from '@/lib/auth/demo'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 
 function startOfMonthISO(date: Date): string {
@@ -94,165 +93,6 @@ export default async function DashboardCopsoqPage({
 }: {
   searchParams?: PageSearchParams
 }) {
-  if (DEMO_MODE_ENABLED) {
-    const now = new Date()
-    const periodStart = startOfMonthISO(now)
-    const periodEnd = endOfMonthISO(now)
-    const demoCompany = DEMO_COMPANIES[0]
-
-    const riskByDimension = [
-      { name: 'Exigencias Quantitativas', score: 82, status: 'Critico' },
-      { name: 'Exigencias Emocionais', score: 76, status: 'Critico' },
-      { name: 'Conflito Trabalho-Familia', score: 68, status: 'Alerta' },
-      { name: 'Estresse', score: 63, status: 'Alerta' },
-      { name: 'Burnout', score: 58, status: 'Alerta' },
-      { name: 'Suporte Social', score: 31, status: 'Alerta' },
-      { name: 'Qualidade da Lideranca', score: 44, status: 'Alerta' },
-      { name: 'Influencia no Trabalho', score: 49, status: 'Alerta' },
-    ]
-
-    const sectorBars = [
-      { name: 'Logistica', score: 80, respondents: 22 },
-      { name: 'Producao', score: 73, respondents: 31 },
-      { name: 'Comercial', score: 54, respondents: 18 },
-      { name: 'Administrativo', score: 41, respondents: 16 },
-      { name: 'Manutencao', score: 66, respondents: 12 },
-    ]
-
-    const weeklyTrend = [
-      { week: 'S1', value: 59 },
-      { week: 'S2', value: 62 },
-      { week: 'S3', value: 68 },
-      { week: 'S4', value: 64 },
-    ]
-
-    const criticalCount = riskByDimension.filter((item) => item.score >= 75).length
-    const alertCount = riskByDimension.filter((item) => item.score >= 26 && item.score <= 74).length
-    const healthyCount = riskByDimension.filter((item) => item.score <= 25).length
-    const respondentCount = sectorBars.reduce((acc, item) => acc + item.respondents, 0)
-
-    const barColor = (score: number): string => {
-      if (score >= 75) return 'bg-rose-500'
-      if (score >= 26) return 'bg-amber-400'
-      return 'bg-emerald-500'
-    }
-
-    return (
-      <main className="min-h-screen bg-[#06080d] p-6 md:p-10 text-slate-100">
-        <section className="max-w-7xl mx-auto space-y-6">
-          <header className="rounded-2xl p-6 bg-gradient-to-r from-[#101726] via-[#131b2f] to-[#0f1d26] border border-slate-800">
-            <p className="text-xs uppercase tracking-widest text-slate-400 font-black">Dashboard COPSOQ II (Demo Realista)</p>
-            <h1 className="text-2xl font-black text-white mt-2">Panorama Psicossocial da Empresa</h1>
-            <p className="text-sm text-slate-300 mt-2">Empresa: {demoCompany?.nomeFantasia ?? demoCompany?.razaoSocial ?? 'Demo'}</p>
-            <p className="text-sm text-slate-300 mt-1">Periodo de referencia: {periodStart} ate {periodEnd}</p>
-            <p className="text-sm text-cyan-300 mt-3 font-medium">Simulacao com dados agregados por setor e dimensao (escala 0-100).</p>
-          </header>
-
-          <section className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <article className="rounded-2xl p-4 border border-slate-800 bg-[#0e1119]">
-              <p className="text-[10px] uppercase font-black text-slate-400">Respondentes</p>
-              <p className="text-3xl font-black text-white mt-2">{respondentCount}</p>
-              <p className="text-xs text-slate-400 mt-2">5 setores ativos</p>
-            </article>
-            <article className="rounded-2xl p-4 border border-slate-800 bg-[#0e1119]">
-              <p className="text-[10px] uppercase font-black text-slate-400">Media Geral de Risco</p>
-              <p className="text-3xl font-black text-white mt-2">64</p>
-              <p className="text-xs text-amber-300 mt-2">Faixa de alerta</p>
-            </article>
-            <article className="rounded-2xl p-4 border border-slate-800 bg-[#0e1119]">
-              <p className="text-[10px] uppercase font-black text-slate-400">Dimensoes Criticas</p>
-              <p className="text-3xl font-black text-rose-400 mt-2">{criticalCount}</p>
-              <p className="text-xs text-slate-400 mt-2">&gt;= 75 pontos</p>
-            </article>
-            <article className="rounded-2xl p-4 border border-slate-800 bg-[#0e1119]">
-              <p className="text-[10px] uppercase font-black text-slate-400">Dimensoes em Alerta</p>
-              <p className="text-3xl font-black text-amber-300 mt-2">{alertCount}</p>
-              <p className="text-xs text-slate-400 mt-2">26 a 74 pontos</p>
-            </article>
-            <article className="rounded-2xl p-4 border border-slate-800 bg-[#0e1119]">
-              <p className="text-[10px] uppercase font-black text-slate-400">Dimensoes Saudaveis</p>
-              <p className="text-3xl font-black text-emerald-300 mt-2">{healthyCount}</p>
-              <p className="text-xs text-slate-400 mt-2">0 a 25 pontos</p>
-            </article>
-          </section>
-
-          <section className="grid lg:grid-cols-2 gap-6">
-            <article className="rounded-2xl border border-slate-800 bg-[#0d1018] p-5">
-              <p className="text-lg font-black text-white">Risco Medio por Setor</p>
-              <p className="text-sm text-slate-400 mt-1">Barras em escala 0-100 (quanto maior, pior).</p>
-              <div className="mt-5 space-y-4">
-                {sectorBars.map((item) => (
-                  <div key={item.name}>
-                    <div className="flex justify-between text-xs text-slate-300 mb-1">
-                      <span>{item.name}</span>
-                      <span>{item.score}</span>
-                    </div>
-                    <div className="h-3 rounded-full bg-slate-800 overflow-hidden">
-                      <div className={`h-full ${barColor(item.score)}`} style={{ width: `${item.score}%` }} />
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-1">{item.respondents} respondentes</p>
-                  </div>
-                ))}
-              </div>
-            </article>
-
-            <article className="rounded-2xl border border-slate-800 bg-[#0d1018] p-5">
-              <p className="text-lg font-black text-white">Evolucao Semanal (Media Geral)</p>
-              <p className="text-sm text-slate-400 mt-1">Historico simulado das ultimas 4 semanas.</p>
-              <div className="mt-5 h-[220px] flex items-end gap-4">
-                {weeklyTrend.map((point) => (
-                  <div key={point.week} className="flex-1 flex flex-col items-center">
-                    <div className="text-xs text-slate-300 mb-1">{point.value}</div>
-                    <div className="w-full max-w-[56px] rounded-t-md bg-gradient-to-t from-blue-600 to-cyan-300" style={{ height: `${point.value * 1.8}px` }} />
-                    <div className="text-xs text-slate-500 mt-2">{point.week}</div>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </section>
-
-          <section className="rounded-2xl border border-slate-800 bg-[#0d1018] p-5 overflow-hidden">
-            <p className="text-lg font-black text-white">Dimensoes COPSOQ (Simulacao)</p>
-            <p className="text-sm text-slate-400 mt-1">Classificacao automatica por faixa: Saudavel, Alerta e Critico.</p>
-            <div className="overflow-x-auto mt-4">
-              <table className="w-full min-w-[760px] text-sm">
-                <thead className="text-slate-400 uppercase text-[10px] tracking-widest">
-                  <tr className="border-b border-slate-800">
-                    <th className="text-left py-3 px-2">Dimensao</th>
-                    <th className="text-left py-3 px-2">Score</th>
-                    <th className="text-left py-3 px-2">Status</th>
-                    <th className="text-left py-3 px-2">Barra</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {riskByDimension.map((item) => (
-                    <tr key={item.name} className="border-t border-slate-900">
-                      <td className="py-3 px-2 font-semibold text-slate-100">{item.name}</td>
-                      <td className="py-3 px-2 text-slate-300">{item.score}</td>
-                      <td className="py-3 px-2">
-                        <span className={`text-[11px] font-bold px-2 py-1 rounded-full ${item.score >= 75 ? 'bg-rose-900/60 text-rose-300' : item.score >= 26 ? 'bg-amber-900/50 text-amber-300' : 'bg-emerald-900/60 text-emerald-300'}`}>
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2">
-                        <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
-                          <div className={`h-full ${barColor(item.score)}`} style={{ width: `${item.score}%` }} />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <footer className="rounded-xl border border-slate-800 bg-[#0a0d15] p-4 text-xs text-slate-400">
-            Dados simulados para apresentacao comercial e testes do layout do painel. Nao representam diagnostico clinico real.
-          </footer>
-        </section>
-      </main>
-    )
-  }
   const supabase = getSupabaseServerClient()
   const {
     data: { user },
@@ -527,5 +367,8 @@ export default async function DashboardCopsoqPage({
     </main>
   )
 }
+
+
+
 
 

@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { DEMO_COMPANIES, DEMO_MODE_ENABLED } from '@/lib/auth/demo'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
 type PreviewData = {
@@ -38,7 +37,7 @@ function normalizeHeader(value: string): string {
 
 export default function ClinicPage() {
   const router = useRouter()
-  const [companyId, setCompanyId] = useState(DEMO_COMPANIES[0]?.id ?? '')
+  const [companyId, setCompanyId] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<PreviewData | null>(null)
   const [status, setStatus] = useState<string | null>(null)
@@ -47,24 +46,9 @@ export default function ClinicPage() {
   const [loadingCommit, setLoadingCommit] = useState(false)
   const [templateId, setTemplateId] = useState('')
 
-  const supabase = useMemo(() => {
-    if (DEMO_MODE_ENABLED) return null
-    return getSupabaseBrowserClient()
-  }, [])
+  const supabase = useMemo(() => getSupabaseBrowserClient(), [])
 
   const logout = async () => {
-    if (DEMO_MODE_ENABLED) {
-      await fetch('/api/auth/demo-logout', { method: 'POST' })
-      router.push('/login')
-      router.refresh()
-      return
-    }
-
-    if (!supabase) {
-      router.push('/login')
-      return
-    }
-
     await supabase.auth.signOut()
     router.push('/login')
   }
@@ -103,80 +87,28 @@ export default function ClinicPage() {
     setLoadingPreview(true)
 
     try {
-      if (DEMO_MODE_ENABLED) {
-        const rows: Record<string, string | number | null>[] = []
-        let headers: string[] = []
+      const formData = new FormData()
+      formData.append('entityType', 'collaborators')
+      formData.append('sourceFormat', format)
+      formData.append('companyId', companyId)
+      formData.append('mapping', JSON.stringify(mapping))
+      formData.append('file', file)
 
-        if (format === 'xlsx') {
-          const xlsx = await import('xlsx')
-          const buffer = await file.arrayBuffer()
-          const workbook = xlsx.read(buffer, { type: 'array' })
-          const firstSheet = workbook.SheetNames[0]
-          const sheet = workbook.Sheets[firstSheet]
-          const jsonRows = xlsx.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' })
-          headers = jsonRows.length > 0 ? Object.keys(jsonRows[0]).map((h) => normalizeHeader(String(h))) : []
-          for (const row of jsonRows.slice(0, 20)) {
-            const normalized: Record<string, string | number | null> = {}
-            for (const [key, value] of Object.entries(row)) {
-              normalized[normalizeHeader(key)] = typeof value === 'number' ? value : String(value || '')
-            }
-            rows.push(normalized)
-          }
-        } else {
-          const text = await file.text()
-          const delimiter = inferDelimiter(text)
-          const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0)
-          headers = lines[0]?.split(delimiter).map((h) => normalizeHeader(h)) ?? []
-          for (const line of lines.slice(1, 21)) {
-            const values = line.split(delimiter)
-            const row: Record<string, string | number | null> = {}
-            headers.forEach((header, index) => {
-              row[header] = (values[index] ?? '').trim()
-            })
-            rows.push(row)
-          }
-        }
+      const response = await fetch('/api/imports/preview', {
+        method: 'POST',
+        body: formData,
+      })
 
-        const totalRows = rows.length
-        const validRows = rows.filter((row) => String(row.nome ?? '').trim().length > 0 && String(row.cpf ?? '').trim().length > 0).length
+      const json = (await response.json()) as
+        | { ok: true; data: PreviewData }
+        | { ok: false; error?: { message?: string; details?: string[] } }
 
-        setPreview({
-          importJobId: `demo-job-${Date.now()}`,
-          detectedColumns: headers,
-          previewRows: rows.slice(0, 10),
-          validationSummary: {
-            totalRows,
-            validRows,
-            invalidRows: Math.max(0, totalRows - validRows),
-            duplicateInFile: 0,
-            duplicateInDatabase: 0,
-          },
-        })
-        setStatus('Preview demo gerado com sucesso.')
-      } else {
-        const formData = new FormData()
-        formData.append('entityType', 'collaborators')
-        formData.append('sourceFormat', format)
-        formData.append('companyId', companyId)
-        formData.append('mapping', JSON.stringify(mapping))
-        formData.append('file', file)
-
-        const response = await fetch('/api/imports/preview', {
-          method: 'POST',
-          body: formData,
-        })
-
-        const json = (await response.json()) as
-          | { ok: true; data: PreviewData }
-          | { ok: false; error?: { message?: string; details?: string[] } }
-
-        if (!response.ok || !json.ok) {
-          throw new Error(json.ok ? 'Falha ao gerar preview.' : json.error?.message ?? 'Falha ao gerar preview.')
-        }
-
-        setPreview(json.data)
-        setStatus('Preview gerado. Revise os dados antes do commit.')
+      if (!response.ok || !json.ok) {
+        throw new Error(json.ok ? 'Falha ao gerar preview.' : json.error?.message ?? 'Falha ao gerar preview.')
       }
+
+      setPreview(json.data)
+      setStatus('Preview gerado. Revise os dados antes do commit.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao gerar preview.')
     } finally {
@@ -190,11 +122,6 @@ export default function ClinicPage() {
     setError(null)
 
     try {
-      if (DEMO_MODE_ENABLED) {
-        setStatus('Importacao demo concluida: colaboradores atualizados para envio por e-mail.')
-        return
-      }
-
       const response = await fetch('/api/imports/commit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
