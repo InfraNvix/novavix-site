@@ -5,6 +5,7 @@ import { processCopsoqCollaboratorOrgSync } from '@/lib/copsoq/services/process-
 import { writeCopsoqAuditEvent } from '@/lib/copsoq/services/audit'
 import { parseCopsoqCollaboratorOrgSyncPayload } from '@/lib/validators/copsoq-collaborator-org-sync'
 import { canAccessCompanyScope, resolveCopsoqAccessContext } from '@/lib/copsoq/auth/access'
+import { getPublicDebugDetails, logServerError, sanitizeErrorMessage } from '@/lib/security/safe-error'
 
 type ApiErrorCode =
   | 'INVALID_JSON'
@@ -140,7 +141,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         { status: 200 }
       )
     } catch (error) {
-      const code = error instanceof Error ? error.message : 'COPSOQ_COLLABORATOR_ORG_SYNC_UNKNOWN_ERROR'
+      const code = sanitizeErrorMessage(error, 'COPSOQ_COLLABORATOR_ORG_SYNC_UNKNOWN_ERROR')
+      logServerError('POST /api/copsoq/collaborators/sync-org domain failure', error, { ip, code })
       await writeCopsoqAuditEvent({
         eventName: 'copsoq.sync.org_scope',
         eventStatus: 'failure',
@@ -154,7 +156,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         ip,
         errorCode: code,
       })
-      return errorResponse(500, 'DOMAIN_ERROR', 'Falha ao sincronizar escopo organizacional COPSOQ.', [code])
+      return errorResponse(500, 'DOMAIN_ERROR', 'Falha ao sincronizar escopo organizacional COPSOQ.', getPublicDebugDetails(code))
     }
   } catch {
     await writeCopsoqAuditEvent({

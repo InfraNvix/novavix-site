@@ -83,6 +83,10 @@ type FormEmailInviteRow = {
   id: string
   template_id: string
   recipient_email: string
+  company_id?: string | null
+  collaborator_id?: string | null
+  collaborator_external_employee_id?: string | null
+  collaborator_name?: string | null
   token_hash: string
   status: string
   expires_at: string
@@ -155,11 +159,32 @@ async function fetchAll<T extends Record<string, unknown>>(table: string, column
 
 async function ensureIndexes(db: Db): Promise<void> {
   await Promise.all([
-    db.collection('companies').createIndex({ supabase_id: 1 }, { unique: true }),
-    db.collection('user_profiles').createIndex({ supabase_id: 1 }, { unique: true }),
-    db.collection('company_form_templates').createIndex({ supabase_id: 1 }, { unique: true }),
-    db.collection('company_form_submissions').createIndex({ supabase_id: 1 }, { unique: true }),
-    db.collection('form_email_invites').createIndex({ supabase_id: 1 }, { unique: true }),
+    db.collection('companies').createIndex(
+      { supabase_id: 1 },
+      { unique: true, partialFilterExpression: { supabase_id: { $type: 'string' } } }
+    ),
+    db.collection('user_profiles').createIndex(
+      { supabase_id: 1 },
+      { unique: true, partialFilterExpression: { supabase_id: { $type: 'string' } } }
+    ),
+    db.collection('company_form_templates').createIndex(
+      { supabase_id: 1 },
+      { unique: true, partialFilterExpression: { supabase_id: { $type: 'string' } } }
+    ),
+    db.collection('company_form_submissions').createIndex(
+      { supabase_id: 1 },
+      { unique: true, partialFilterExpression: { supabase_id: { $type: 'string' } } }
+    ),
+    db.collection('form_email_invites').createIndex(
+      { supabase_id: 1 },
+      { unique: true, partialFilterExpression: { supabase_id: { $type: 'string' } } }
+    ),
+    db.collection('form_email_invites').createIndex(
+      { token_hash: 1 },
+      { unique: true, partialFilterExpression: { token_hash: { $type: 'string' } } }
+    ),
+    db.collection('form_email_invites').createIndex({ status: 1, expires_at: 1 }),
+    db.collection('form_email_invites').createIndex({ template_id: 1, recipient_email: 1, status: 1, created_at: -1 }),
   ])
 }
 
@@ -282,6 +307,10 @@ export async function upsertFormEmailInvites(db: Db, rows: FormEmailInviteRow[])
           supabase_id: row.id,
           template_id: row.template_id,
           recipient_email: row.recipient_email,
+          company_id: row.company_id ?? null,
+          collaborator_id: row.collaborator_id ?? null,
+          collaborator_external_employee_id: row.collaborator_external_employee_id ?? null,
+          collaborator_name: row.collaborator_name ?? null,
           token_hash: row.token_hash,
           status: row.status,
           expires_at: row.expires_at,

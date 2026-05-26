@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { validateStrongPassword } from '@/lib/auth/password-policy'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
@@ -15,7 +15,6 @@ function parseHashParams(hash: string): URLSearchParams {
 
 export default function ResetPasswordPage() {
   const router = useRouter()
-  const supabase = useMemo(() => getSupabaseBrowserClient(), [])
   const [state, setState] = useState<RecoveryState>('idle')
   const [message, setMessage] = useState<string | null>(null)
   const [password, setPassword] = useState('')
@@ -23,6 +22,7 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const run = async () => {
+      const supabase = getSupabaseBrowserClient()
       const params = parseHashParams(window.location.hash)
       const accessToken = params.get('access_token')
       const refreshToken = params.get('refresh_token')
@@ -75,7 +75,7 @@ export default function ResetPasswordPage() {
     }
 
     void run()
-  }, [router, supabase])
+  }, [router])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -96,6 +96,7 @@ export default function ResetPasswordPage() {
     setState('updating')
     setMessage(null)
 
+    const supabase = getSupabaseBrowserClient()
     const { error } = await supabase.auth.updateUser({ password })
 
     if (error) {

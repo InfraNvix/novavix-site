@@ -3,6 +3,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { normalizeCnpj, isValidCnpjFormat } from '@/lib/auth/cnpj'
 import { getClientIp } from '@/lib/security/http'
 import { checkRateLimit } from '@/lib/security/rate-limit'
+import { getPublicErrorDetails, logServerError } from '@/lib/security/safe-error'
 
 type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR' | 'TOO_MANY_REQUESTS'
 
@@ -85,7 +86,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       { status: 200 }
     )
   } catch (error) {
-    const details = error instanceof Error ? [error.message] : []
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao listar colaboradores.', details)
+    logServerError('GET /api/forms/collaborators failed', error)
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao listar colaboradores.', getPublicErrorDetails(error))
   }
 }

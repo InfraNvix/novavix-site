@@ -1,11 +1,13 @@
 ﻿# Go-live na Locaweb VPS (Linux) - Next.js 14
 
-Este runbook e para deploy em VPS Linux (Ubuntu 22.04+) com foco em estabilidade e zero downtime usando Nginx + PM2 + SSL.
+Este runbook e para deploy em VPS Linux (Ubuntu 22.04+) usando Nginx + PM2 + SSL.
+
+> **VPS de 512 MB:** use o fluxo de artefatos em `docs/DEPLOY_VPS_512MB.md`. Nao execute `npm ci` ou `npm run build` na VPS pequena e nao use cluster PM2 nesse plano.
 
 ## 1) Premissas
 
 - Projeto Next.js 14 com `output: standalone`
-- PM2 em modo cluster (2 instancias) para reload sem interrupcao
+- PM2 conforme `ecosystem.config.cjs` (`fork`, 1 instancia para a configuracao de 512 MB)
 - Nginx como reverse proxy para `127.0.0.1:3000`
 - Certificado Let's Encrypt via Certbot
 
@@ -74,7 +76,7 @@ NODE_ENV=production
 ENVEOF
 ```
 
-## 6) Deploy da aplicacao
+## 6) Deploy da aplicacao (somente VPS com memoria para build)
 
 ```bash
 cd /var/www/novavix-site
@@ -88,17 +90,25 @@ cd "releases/$RELEASE"
 # Opcao B: atualizar release via rsync/CI artifact
 
 npm ci
-cp /var/www/novavix-site/shared.env .env
-npm run build
+set -a
+. /var/www/novavix-site/shared.env
+set +a
+npm run build:prod
+mkdir -p .next/standalone/.next
+cp -a .next/static .next/standalone/.next/
+cp -a public .next/standalone/
 
 ln -sfn "/var/www/novavix-site/releases/$RELEASE" /var/www/novavix-site/current
 cd /var/www/novavix-site/current
 ```
 
-## 7) PM2 (zero downtime)
+## 7) PM2
 
 ```bash
 cd /var/www/novavix-site/current
+set -a
+. /var/www/novavix-site/shared.env
+set +a
 pm2 startOrReload ecosystem.config.cjs --update-env
 pm2 save
 pm2 startup systemd -u $USER --hp $HOME
@@ -207,7 +217,7 @@ pm2 set pm2-logrotate:dateFormat YYYY-MM-DD_HH-mm-ss
 
 ## 11) Checklist tecnico de go-live
 
-- `pm2 status` com `novavix-site` online (2 instancias)
+- `pm2 status` com `novavix-site` online (1 instancia na configuracao de 512 MB)
 - `curl -I https://PREENCHER_DOMINIO` retorna `200`/`307` esperado
 - `curl -I http://PREENCHER_DOMINIO` redireciona para HTTPS
 - `curl -fsS https://PREENCHER_DOMINIO/api/health/mongodb`
@@ -227,6 +237,9 @@ ls -1 releases
 # escolher release anterior
 ln -sfn /var/www/novavix-site/releases/PREENCHER_RELEASE_ANTERIOR /var/www/novavix-site/current
 cd /var/www/novavix-site/current
+set -a
+. /var/www/novavix-site/shared.env
+set +a
 pm2 startOrReload ecosystem.config.cjs --update-env
 ```
 

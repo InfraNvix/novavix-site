@@ -12,6 +12,7 @@ import {
   updateInviteMongoById,
 } from '@/lib/mongodb/primary-store'
 import { mirrorCompanyFormTemplateById } from '@/lib/mongodb/mirror/write-through'
+import { getPublicErrorDetails, logServerError } from '@/lib/security/safe-error'
 
 type ApiErrorCode = 'INVALID_JSON' | 'VALIDATION_ERROR' | 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'CONFLICT' | 'INTERNAL_ERROR'
 
@@ -118,12 +119,17 @@ export async function POST(request: Request): Promise<NextResponse> {
       const admin = getSupabaseAdminClient()
       const { data } = await admin
         .from('company_form_templates')
-        .select('id, template_name, status')
+        .select('id, company_id, template_name, status')
         .eq('id', templateId)
         .eq('status', 'active')
         .maybeSingle()
       if (data?.id) {
-        template = data
+        template = {
+          id: data.id,
+          company_id: data.company_id ?? null,
+          template_name: data.template_name,
+          status: data.status,
+        }
         await mirrorCompanyFormTemplateById(data.id, 'fallback_read_template_invite_send')
       }
     }
@@ -138,7 +144,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       return errorResponse(409, 'CONFLICT', 'Ja existe um convite recente para este e-mail e template.')
     }
 
-    const token = randomBytes(32).toString('hex')
+    const token = randomBytes(16).toString('hex')
     const tokenHash = createHash('sha256').update(token).digest('hex')
     const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
 
@@ -167,8 +173,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       last_error: null,
     })
 
-    const formUrl = new URL(`/formularios/${template.id}`, getAppBaseUrl())
-    formUrl.searchParams.set('invite', token)
+    const formUrl = new URL(`/portal/${token}`, getAppBaseUrl())
 
     try {
       await sendFormInvite({
@@ -180,6 +185,11 @@ export async function POST(request: Request): Promise<NextResponse> {
         subject: 'Voce recebeu um formulario para preenchimento',
       })
     } catch (mailError) {
+      logServerError('POST /api/admin/form-email-invites/send mail failed', mailError, {
+        inviteId,
+        templateId: template.id,
+        recipientEmail,
+      })
       const runtimeDetails = describeRuntimeError(mailError)
       const lastError = runtimeDetails.join(' | ').slice(0, 4000)
       await updateInviteMongoById(inviteId, {
@@ -191,7 +201,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         status: 'revoked',
         last_error: lastError || 'EMAIL_SEND_FAILED',
       })
-      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao enviar e-mail de convite.', runtimeDetails)
+      return errorResponse(500, 'INTERNAL_ERROR', 'Falha ao enviar e-mail de convite.', getPublicErrorDetails(mailError))
     }
 
     const sentAt = new Date().toISOString()
@@ -220,8 +230,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       { status: 201 }
     )
   } catch (error) {
-    const details = error instanceof Error ? [error.message] : []
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao enviar convite por e-mail.', details)
+    logServerError('POST /api/admin/form-email-invites/send failed', error)
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao enviar convite por e-mail.', getPublicErrorDetails(error))
   }
 }
-

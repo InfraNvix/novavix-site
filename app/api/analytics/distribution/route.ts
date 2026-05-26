@@ -6,6 +6,7 @@ import { canAccessCompanyScope, resolveCopsoqAccessContext } from '@/lib/copsoq/
 import { parseAnalyticsDistributionQuery } from '@/lib/validators/analytics-distribution'
 import { resolveAnalyticsCompanyId, analyticsErrorResponse } from '@/lib/analytics/http'
 import { getAnalyticsDistribution } from '@/lib/analytics/services/analytics-service'
+import { getPublicErrorDetails, logServerError, sanitizeErrorMessage } from '@/lib/security/safe-error'
 
 export async function GET(request: Request): Promise<NextResponse> {
   const ip = getClientIp(request)
@@ -50,7 +51,8 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({ ok: true, data: result }, { status: 200 })
   } catch (error) {
-    const code = error instanceof Error ? error.message : 'ANALYTICS_DISTRIBUTION_INTERNAL_ERROR'
+    const code = sanitizeErrorMessage(error, 'ANALYTICS_DISTRIBUTION_INTERNAL_ERROR')
+    logServerError('GET /api/analytics/distribution failed', error, { ip, code })
     await writeCopsoqAuditEvent({
       eventName: 'analytics.read.distribution',
       eventStatus: 'failure',
@@ -60,6 +62,6 @@ export async function GET(request: Request): Promise<NextResponse> {
       ip,
       errorCode: code,
     })
-    return analyticsErrorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao consultar distribuicao.', [code])
+    return analyticsErrorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao consultar distribuicao.', getPublicErrorDetails(error))
   }
 }

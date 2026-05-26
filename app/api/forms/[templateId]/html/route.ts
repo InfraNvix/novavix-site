@@ -4,6 +4,7 @@ import type { FormTemplateSchema } from '@/lib/forms/parser'
 import { renderTemplateHtml } from '@/lib/forms/render-html'
 import { checkRateLimit } from '@/lib/security/rate-limit'
 import { getClientIp } from '@/lib/security/http'
+import { getPublicErrorDetails, logServerError } from '@/lib/security/safe-error'
 
 type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR' | 'TOO_MANY_REQUESTS'
 
@@ -72,7 +73,7 @@ export async function GET(
       },
     })
   } catch (error) {
-    const details = error instanceof Error ? [error.message] : []
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao gerar HTML.', details)
+    logServerError('GET /api/forms/[templateId]/html failed', error, { templateId: context.params.templateId })
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao gerar HTML.', getPublicErrorDetails(error))
   }
 }

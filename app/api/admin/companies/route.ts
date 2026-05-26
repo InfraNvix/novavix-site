@@ -4,6 +4,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { normalizeCnpj, isValidCnpjFormat } from '@/lib/auth/cnpj'
 import { validateStrongPassword } from '@/lib/auth/password-policy'
+import { getPublicErrorDetails, logServerError } from '@/lib/security/safe-error'
 import {
   backupCompanyToSupabase,
   backupUserProfileToSupabase,
@@ -186,8 +187,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       { status: 201 }
     )
   } catch (error) {
-    const details = error instanceof Error ? [error.message] : []
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao cadastrar empresa.', details)
+    logServerError('POST /api/admin/companies failed', error)
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao cadastrar empresa.', getPublicErrorDetails(error))
   }
 }
 
@@ -232,8 +233,7 @@ export async function GET(): Promise<NextResponse> {
       { status: 200 }
     )
   } catch (error) {
-    const details = error instanceof Error ? [error.message] : []
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao listar empresas.', details)
+    logServerError('GET /api/admin/companies failed', error)
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao listar empresas.', getPublicErrorDetails(error))
   }
 }
-

@@ -6,6 +6,7 @@ import { canAccessCompanyScope, resolveCopsoqAccessContext } from '@/lib/copsoq/
 import { parseAnalyticsOverviewQuery } from '@/lib/validators/analytics-overview'
 import { resolveAnalyticsCompanyId, analyticsErrorResponse } from '@/lib/analytics/http'
 import { getAnalyticsOverview } from '@/lib/analytics/services/analytics-service'
+import { getPublicErrorDetails, logServerError, sanitizeErrorMessage } from '@/lib/security/safe-error'
 
 export async function GET(request: Request): Promise<NextResponse> {
   const ip = getClientIp(request)
@@ -101,7 +102,8 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({ ok: true, data: result }, { status: 200 })
   } catch (error) {
-    const code = error instanceof Error ? error.message : 'ANALYTICS_OVERVIEW_INTERNAL_ERROR'
+    const code = sanitizeErrorMessage(error, 'ANALYTICS_OVERVIEW_INTERNAL_ERROR')
+    logServerError('GET /api/analytics/overview failed', error, { ip, code })
     await writeCopsoqAuditEvent({
       eventName: 'analytics.read.overview',
       eventStatus: 'failure',
@@ -111,6 +113,6 @@ export async function GET(request: Request): Promise<NextResponse> {
       ip,
       errorCode: code,
     })
-    return analyticsErrorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao consultar analytics.', [code])
+    return analyticsErrorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao consultar analytics.', getPublicErrorDetails(error))
   }
 }

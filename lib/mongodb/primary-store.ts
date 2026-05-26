@@ -143,22 +143,39 @@ export async function insertTemplateMongo(input: {
   ])
 }
 
-export async function findTemplateActiveByIdMongo(templateId: string): Promise<{ id: string; template_name: string; status: string; schema_json?: unknown } | null> {
+export async function findTemplateActiveByIdMongo(
+  templateId: string
+): Promise<{ id: string; company_id: string | null; template_name: string; status: string; schema_json?: unknown } | null> {
   const db = await getMongoDb()
   const doc = await db.collection('company_form_templates').findOne(
     { supabase_id: templateId, status: 'active' },
-    { projection: { supabase_id: 1, template_name: 1, status: 1, schema_json: 1 } }
+    { projection: { supabase_id: 1, company_id: 1, template_name: 1, status: 1, schema_json: 1 } }
   )
   if (!doc) return null
   return {
     id: String(doc.supabase_id ?? ''),
+    company_id: (doc.company_id as string | null | undefined) ?? null,
     template_name: String(doc.template_name ?? ''),
     status: String(doc.status ?? 'active'),
     schema_json: doc.schema_json,
   }
 }
 
-export async function insertInviteMongo(input: { id: string; template_id: string; recipient_email: string; token_hash: string; status: string; expires_at: string; created_by: string; sent_at: string | null; last_error: string | null }): Promise<void> {
+export async function insertInviteMongo(input: {
+  id: string
+  template_id: string
+  recipient_email: string
+  token_hash: string
+  status: string
+  expires_at: string
+  created_by: string | null
+  sent_at: string | null
+  last_error: string | null
+  company_id?: string | null
+  collaborator_id?: string | null
+  collaborator_external_employee_id?: string | null
+  collaborator_name?: string | null
+}): Promise<void> {
   const db = await getMongoDb()
   await upsertFormEmailInvites(db, [
     {
@@ -196,11 +213,55 @@ export async function updateInviteMongoById(inviteId: string, patch: Record<stri
   )
 }
 
-export async function findInviteByTokenHashMongo(tokenHash: string): Promise<{ id: string; template_id: string; status: string; expires_at: string; used_at: string | null } | null> {
+export async function consumePendingInviteMongoById(inviteId: string, usedAtIso: string): Promise<boolean> {
+  const db = await getMongoDb()
+  const result = await db.collection('form_email_invites').updateOne(
+    {
+      supabase_id: inviteId,
+      status: 'pending',
+      used_at: null,
+    },
+    {
+      $set: {
+        status: 'used',
+        used_at: usedAtIso,
+        mirrored_at: new Date().toISOString(),
+      },
+    }
+  )
+
+  return result.modifiedCount === 1
+}
+
+export async function findInviteByTokenHashMongo(tokenHash: string): Promise<{
+  id: string
+  template_id: string
+  status: string
+  expires_at: string
+  used_at: string | null
+  recipient_email: string | null
+  company_id: string | null
+  collaborator_id: string | null
+  collaborator_external_employee_id: string | null
+  collaborator_name: string | null
+} | null> {
   const db = await getMongoDb()
   const doc = await db.collection('form_email_invites').findOne(
     { token_hash: tokenHash },
-    { projection: { supabase_id: 1, template_id: 1, status: 1, expires_at: 1, used_at: 1 } }
+    {
+      projection: {
+        supabase_id: 1,
+        template_id: 1,
+        status: 1,
+        expires_at: 1,
+        used_at: 1,
+        recipient_email: 1,
+        company_id: 1,
+        collaborator_id: 1,
+        collaborator_external_employee_id: 1,
+        collaborator_name: 1,
+      },
+    }
   )
 
   if (!doc?.supabase_id) return null
@@ -210,6 +271,11 @@ export async function findInviteByTokenHashMongo(tokenHash: string): Promise<{ i
     status: String(doc.status ?? ''),
     expires_at: String(doc.expires_at ?? ''),
     used_at: (doc.used_at as string | null | undefined) ?? null,
+    recipient_email: (doc.recipient_email as string | null | undefined) ?? null,
+    company_id: (doc.company_id as string | null | undefined) ?? null,
+    collaborator_id: (doc.collaborator_id as string | null | undefined) ?? null,
+    collaborator_external_employee_id: (doc.collaborator_external_employee_id as string | null | undefined) ?? null,
+    collaborator_name: (doc.collaborator_name as string | null | undefined) ?? null,
   }
 }
 

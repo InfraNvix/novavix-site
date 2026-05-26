@@ -9,6 +9,7 @@ import {
   getCopsoqMinRespondentsThreshold,
   resolveCopsoqAccessContext,
 } from '@/lib/copsoq/auth/access'
+import { getPublicDebugDetails, logServerError, sanitizeErrorMessage } from '@/lib/security/safe-error'
 
 type ApiErrorCode =
   | 'INVALID_JSON'
@@ -154,7 +155,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       })
       return NextResponse.json({ ok: true, data: result }, { status: 200 })
     } catch (error) {
-      const code = error instanceof Error ? error.message : 'COPSOQ_AGGREGATE_UNKNOWN_ERROR'
+      const code = sanitizeErrorMessage(error, 'COPSOQ_AGGREGATE_UNKNOWN_ERROR')
+      logServerError('POST /api/copsoq/aggregate/recompute domain failure', error, { ip, code })
       const mapped = mapDomainError(code)
       await writeCopsoqAuditEvent({
         eventName: 'copsoq.recompute.aggregate',
@@ -169,7 +171,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         ip,
         errorCode: code,
       })
-      return errorResponse(mapped.status, 'DOMAIN_ERROR', mapped.message, [code])
+      return errorResponse(mapped.status, 'DOMAIN_ERROR', mapped.message, getPublicDebugDetails(code))
     }
   } catch {
     await writeCopsoqAuditEvent({

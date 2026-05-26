@@ -6,6 +6,7 @@ import { getImportJobById } from '@/lib/imports/repositories/import-job-reposito
 import { processImportCommit } from '@/lib/imports/services/process-import-commit'
 import { writeImportAuditEvent } from '@/lib/imports/services/audit'
 import { parseImportCommitPayload } from '@/lib/validators/import-commit'
+import { getPublicDebugDetails, getPublicErrorDetails, logServerError, sanitizeErrorMessage } from '@/lib/security/safe-error'
 
 type ApiErrorCode =
   | 'INVALID_JSON'
@@ -168,14 +169,15 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({ ok: true, data: result }, { status: 200 })
   } catch (error) {
-    const code = error instanceof Error ? error.message : 'IMPORT_COMMIT_INTERNAL_ERROR'
+    const code = sanitizeErrorMessage(error, 'IMPORT_COMMIT_INTERNAL_ERROR')
     if (code === 'IMPORT_PREVIEW_DATA_MISSING' || code === 'IMPORT_REQUIRED_FIELD_UNMAPPED') {
-      return errorResponse(422, 'DOMAIN_ERROR', 'Dados de preview incompletos para commit.', [code])
+      return errorResponse(422, 'DOMAIN_ERROR', 'Dados de preview incompletos para commit.', getPublicDebugDetails(code))
     }
     if (code === 'IMPORT_JOB_NOT_FOUND') {
-      return errorResponse(404, 'DOMAIN_ERROR', 'Job de importacao nao encontrado.', [code])
+      return errorResponse(404, 'DOMAIN_ERROR', 'Job de importacao nao encontrado.', getPublicDebugDetails(code))
     }
 
+    logServerError('POST /api/imports/commit failed', error, { ip, code })
     await writeImportAuditEvent({
       eventName: 'imports.commit',
       eventStatus: 'failure',
@@ -185,7 +187,6 @@ export async function POST(request: Request): Promise<NextResponse> {
       ip,
       errorCode: code,
     })
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao confirmar importacao.', [code])
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao confirmar importacao.', getPublicErrorDetails(error))
   }
 }
-

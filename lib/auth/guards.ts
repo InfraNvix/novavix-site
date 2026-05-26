@@ -1,4 +1,5 @@
-const COMPANY_PREFIXES = ['/dashboard', '/portal']
+const COMPANY_PREFIXES = ['/dashboard']
+const COMPANY_EXACT_ROUTES = ['/portal']
 const ADMIN_PREFIXES = ['/admin']
 const CLINIC_PREFIXES = ['/clinic']
 const AUTH_PAGES = ['/login']
@@ -11,12 +12,16 @@ export function isStaticAsset(pathname: string): boolean {
 }
 
 export function isProtectedRoute(pathname: string): boolean {
+  if (COMPANY_EXACT_ROUTES.includes(pathname)) return true
+
   return [...COMPANY_PREFIXES, ...ADMIN_PREFIXES, ...CLINIC_PREFIXES].some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   )
 }
 
 export function isCompanyRoute(pathname: string): boolean {
+  if (COMPANY_EXACT_ROUTES.includes(pathname)) return true
+
   return COMPANY_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 }
 

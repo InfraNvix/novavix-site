@@ -7,7 +7,11 @@ const AdminStudio = dynamic(
   async () => {
     const config = (await import('@/sanity.config')).default
     const Studio = (await import('./Studio')).default
-    return () => <Studio config={config} />
+    function AdminStudioWithConfig() {
+      return <Studio config={config} />
+    }
+
+    return AdminStudioWithConfig
   },
   {
     ssr: false,

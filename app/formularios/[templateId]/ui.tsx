@@ -26,7 +26,13 @@ function toInputType(field: FormFieldSchema): string {
   return 'text'
 }
 
-export default function DynamicFormClient({ templateId }: { templateId: string }) {
+export default function DynamicFormClient({
+  templateId,
+  initialInviteToken = '',
+}: {
+  templateId: string
+  initialInviteToken?: string
+}) {
   const searchParams = useSearchParams()
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [submitState, setSubmitState] = useState<SubmitState>('idle')
@@ -42,7 +48,7 @@ export default function DynamicFormClient({ templateId }: { templateId: string }
   const [respondentEmail, setRespondentEmail] = useState('')
   const [answers, setAnswers] = useState<Record<string, string | boolean>>({})
   const [finalized, setFinalized] = useState(false)
-  const [inviteToken, setInviteToken] = useState('')
+  const [inviteToken, setInviteToken] = useState(initialInviteToken)
   const [inviteValidating, setInviteValidating] = useState(false)
   const [inviteValid, setInviteValid] = useState(false)
   const [inviteStatusMessage, setInviteStatusMessage] = useState<string | null>(null)

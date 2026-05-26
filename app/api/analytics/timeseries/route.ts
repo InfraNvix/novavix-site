@@ -6,6 +6,7 @@ import { canAccessCompanyScope, resolveCopsoqAccessContext } from '@/lib/copsoq/
 import { parseAnalyticsTimeseriesQuery } from '@/lib/validators/analytics-timeseries'
 import { resolveAnalyticsCompanyId, analyticsErrorResponse } from '@/lib/analytics/http'
 import { getAnalyticsTimeseries } from '@/lib/analytics/services/analytics-service'
+import { getPublicErrorDetails, logServerError, sanitizeErrorMessage } from '@/lib/security/safe-error'
 
 export async function GET(request: Request): Promise<NextResponse> {
   const ip = getClientIp(request)
@@ -63,7 +64,8 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({ ok: true, data: result }, { status: 200 })
   } catch (error) {
-    const code = error instanceof Error ? error.message : 'ANALYTICS_TIMESERIES_INTERNAL_ERROR'
+    const code = sanitizeErrorMessage(error, 'ANALYTICS_TIMESERIES_INTERNAL_ERROR')
+    logServerError('GET /api/analytics/timeseries failed', error, { ip, code })
     await writeCopsoqAuditEvent({
       eventName: 'analytics.read.timeseries',
       eventStatus: 'failure',
@@ -73,6 +75,6 @@ export async function GET(request: Request): Promise<NextResponse> {
       ip,
       errorCode: code,
     })
-    return analyticsErrorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao consultar serie temporal.', [code])
+    return analyticsErrorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao consultar serie temporal.', getPublicErrorDetails(error))
   }
 }

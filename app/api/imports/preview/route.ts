@@ -5,6 +5,7 @@ import { canAccessCompanyScope, resolveCopsoqAccessContext } from '@/lib/copsoq/
 import { processImportPreview } from '@/lib/imports/services/process-import-preview'
 import { writeImportAuditEvent } from '@/lib/imports/services/audit'
 import { parseImportPreviewInput } from '@/lib/validators/import-preview'
+import { getPublicDebugDetails, getPublicErrorDetails, logServerError, sanitizeErrorMessage } from '@/lib/security/safe-error'
 
 type ApiErrorCode =
   | 'VALIDATION_ERROR'
@@ -13,6 +14,8 @@ type ApiErrorCode =
   | 'FORBIDDEN'
   | 'DOMAIN_ERROR'
   | 'INTERNAL_ERROR'
+
+const MAX_IMPORT_FILE_SIZE_BYTES = 5 * 1024 * 1024
 
 function errorResponse(
   status: number,
@@ -88,6 +91,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (!(file instanceof File)) {
       return errorResponse(422, 'VALIDATION_ERROR', 'Arquivo obrigatorio para preview.')
     }
+    if (file.size > MAX_IMPORT_FILE_SIZE_BYTES) {
+      return errorResponse(413, 'VALIDATION_ERROR', 'Arquivo excede 5MB.')
+    }
 
     const parsed = parseImportPreviewInput({
       entityType: formData.get('entityType'),
@@ -142,9 +148,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         fileBuffer: Buffer.from(await file.arrayBuffer()),
       })
     } catch (error) {
-      const code = error instanceof Error ? error.message : 'IMPORT_PREVIEW_DOMAIN_ERROR'
+      const code = sanitizeErrorMessage(error, 'IMPORT_PREVIEW_DOMAIN_ERROR')
       if (code === 'IMPORT_ENTITY_NOT_ENABLED') {
-        return errorResponse(422, 'DOMAIN_ERROR', 'Entidade ainda nao habilitada para importacao nesta fase.', [code])
+        return errorResponse(422, 'DOMAIN_ERROR', 'Entidade ainda nao habilitada para importacao nesta fase.', getPublicDebugDetails(code))
       }
       if (
         code === 'IMPORT_FILE_EMPTY' ||
@@ -152,7 +158,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         code === 'IMPORT_XLSX_EMPTY_WORKBOOK' ||
         code === 'IMPORT_XLSX_SHEET_NOT_FOUND'
       ) {
-        return errorResponse(422, 'DOMAIN_ERROR', 'Arquivo invalido para preview de importacao.', [code])
+        return errorResponse(422, 'DOMAIN_ERROR', 'Arquivo invalido para preview de importacao.', getPublicDebugDetails(code))
       }
       throw error
     }
@@ -177,7 +183,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({ ok: true, data: result }, { status: 201 })
   } catch (error) {
-    const code = error instanceof Error ? error.message : 'IMPORT_PREVIEW_INTERNAL_ERROR'
+    const code = sanitizeErrorMessage(error, 'IMPORT_PREVIEW_INTERNAL_ERROR')
+    logServerError('POST /api/imports/preview failed', error, { ip, code })
     await writeImportAuditEvent({
       eventName: 'imports.preview',
       eventStatus: 'failure',
@@ -187,6 +194,6 @@ export async function POST(request: Request): Promise<NextResponse> {
       ip,
       errorCode: code,
     })
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao processar preview de importacao.', [code])
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao processar preview de importacao.', getPublicErrorDetails(error))
   }
 }

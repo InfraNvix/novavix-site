@@ -3,6 +3,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { FormTemplateSchema } from '@/lib/forms/parser'
 import { checkRateLimit } from '@/lib/security/rate-limit'
 import { getClientIp } from '@/lib/security/http'
+import { getPublicErrorDetails, logServerError } from '@/lib/security/safe-error'
 
 type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR' | 'TOO_MANY_REQUESTS'
 
@@ -82,7 +83,7 @@ export async function GET(
       { status: 200 }
     )
   } catch (error) {
-    const details = error instanceof Error ? [error.message] : []
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao carregar template.', details)
+    logServerError('GET /api/forms/[templateId] failed', error, { templateId: context.params.templateId })
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao carregar template.', getPublicErrorDetails(error))
   }
 }

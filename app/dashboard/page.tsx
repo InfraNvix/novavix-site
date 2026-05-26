@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
@@ -8,10 +8,10 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 export default function DashboardPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const router = useRouter()
-  const supabase = useMemo(() => getSupabaseBrowserClient(), [])
 
   useEffect(() => {
     const getData = async () => {
+      const supabase = getSupabaseBrowserClient()
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -25,9 +25,10 @@ export default function DashboardPage() {
     }
 
     void getData()
-  }, [router, supabase])
+  }, [router])
 
   const handleSignOut = async () => {
+    const supabase = getSupabaseBrowserClient()
     await supabase.auth.signOut()
     router.push('/login')
   }

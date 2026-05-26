@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getProfileMongoFirst, listTemplatesMongo } from '@/lib/mongodb/primary-store'
+import { getPublicErrorDetails, logServerError } from '@/lib/security/safe-error'
 
 type ApiErrorCode = 'UNAUTHORIZED' | 'FORBIDDEN' | 'INTERNAL_ERROR' | 'VALIDATION_ERROR' | 'NOT_FOUND'
 
@@ -64,8 +65,8 @@ export async function GET(request: Request): Promise<NextResponse> {
       { status: 200 }
     )
   } catch (error) {
-    const details = error instanceof Error ? [error.message] : []
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao listar templates.', details)
+    logServerError('GET /api/admin/forms failed', error)
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao listar templates.', getPublicErrorDetails(error))
   }
 }
 
@@ -118,7 +119,7 @@ export async function DELETE(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({ ok: true }, { status: 200 })
   } catch (error) {
-    const details = error instanceof Error ? [error.message] : []
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao excluir template.', details)
+    logServerError('DELETE /api/admin/forms failed', error)
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao excluir template.', getPublicErrorDetails(error))
   }
 }

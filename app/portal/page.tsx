@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
@@ -10,10 +10,9 @@ export default function PortalPage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  const supabase = useMemo(() => getSupabaseBrowserClient(), [])
-
   useEffect(() => {
     const getUser = async () => {
+      const supabase = getSupabaseBrowserClient()
       const {
         data: { session },
       } = await supabase.auth.getSession()
@@ -29,9 +28,10 @@ export default function PortalPage() {
     }
 
     void getUser()
-  }, [router, supabase])
+  }, [router])
 
   const handleLogout = async () => {
+    const supabase = getSupabaseBrowserClient()
     await supabase.auth.signOut()
     router.push('/')
   }

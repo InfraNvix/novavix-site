@@ -28,9 +28,21 @@ function getResendClient(): Resend {
   return cachedResend
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 export async function sendFormInvite(input: SendFormInviteInput): Promise<{ messageId: string | null }> {
   const fromAddress = getRequiredEnv('EMAIL_FROM')
   const collaboratorDisplayName = input.collaboratorName?.trim() || 'colaborador(a)'
+  const safeCollaboratorDisplayName = escapeHtml(collaboratorDisplayName)
+  const safeTemplateName = escapeHtml(input.templateName)
+  const safeFormUrl = escapeHtml(input.formUrl)
   const hasExpiry = typeof input.expiresAtIso === 'string' && input.expiresAtIso.trim().length > 0
   const expiryText = hasExpiry
     ? new Date(input.expiresAtIso as string).toLocaleString('pt-BR', {
@@ -56,12 +68,12 @@ export async function sendFormInvite(input: SendFormInviteInput): Promise<{ mess
     .join('\n')
 
   const htmlBody = `
-    <p>Ola, ${collaboratorDisplayName}.</p>
-    <p>Voce foi convidado(a) para responder o formulario <strong>${input.templateName}</strong>.</p>
-    <p><a href="${input.formUrl}" style="display:inline-block;padding:10px 14px;border-radius:8px;background:#1d4ed8;color:#ffffff;text-decoration:none;font-weight:700;">Abrir formulario</a></p>
+    <p>Ola, ${safeCollaboratorDisplayName}.</p>
+    <p>Voce foi convidado(a) para responder o formulario <strong>${safeTemplateName}</strong>.</p>
+    <p><a href="${safeFormUrl}" style="display:inline-block;padding:10px 14px;border-radius:8px;background:#1d4ed8;color:#ffffff;text-decoration:none;font-weight:700;">Abrir formulario</a></p>
     ${expiryText ? `<p><strong>Validade do link:</strong> ${expiryText}.</p>` : ''}
     <p>Se preferir, copie e cole este link no navegador:</p>
-    <p><a href="${input.formUrl}">${input.formUrl}</a></p>
+    <p><a href="${safeFormUrl}">${safeFormUrl}</a></p>
     <p>Se voce nao reconhece este convite, ignore este email.</p>
   `
 
@@ -75,7 +87,7 @@ export async function sendFormInvite(input: SendFormInviteInput): Promise<{ mess
   })
 
   if (result.error) {
-    throw new Error(`RESEND_SEND_FAILED:${result.error.name}:${result.error.message}`)
+    throw new Error('RESEND_SEND_FAILED')
   }
 
   return {

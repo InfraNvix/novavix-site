@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
@@ -46,9 +46,8 @@ export default function ClinicPage() {
   const [loadingCommit, setLoadingCommit] = useState(false)
   const [templateId, setTemplateId] = useState('')
 
-  const supabase = useMemo(() => getSupabaseBrowserClient(), [])
-
   const logout = async () => {
+    const supabase = getSupabaseBrowserClient()
     await supabase.auth.signOut()
     router.push('/login')
   }

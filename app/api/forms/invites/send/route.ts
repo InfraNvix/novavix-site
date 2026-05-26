@@ -1,9 +1,17 @@
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { getClientIp } from '@/lib/security/http'
 import { checkRateLimit } from '@/lib/security/rate-limit'
 import { canAccessCompanyScope, resolveCopsoqAccessContext } from '@/lib/copsoq/auth/access'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { sendFormInvite } from '@/lib/email/send-form-invite'
+import { getPublicErrorDetails, logServerError } from '@/lib/security/safe-error'
+import {
+  backupInviteToSupabase,
+  findRecentPendingInviteMongo,
+  insertInviteMongo,
+  updateInviteMongoById,
+} from '@/lib/mongodb/primary-store'
 
 type ApiErrorCode =
   | 'INVALID_JSON'
@@ -27,6 +35,7 @@ type InviteDedupState = {
 const inviteDedupStore = new Map<string, InviteDedupState>()
 const INVITE_DEDUP_WINDOW_MS = Number(process.env.FORM_INVITE_DEDUP_WINDOW_MS ?? '300000')
 const INVITE_DEDUP_MAX_KEYS = 10000
+const DEFAULT_EXPIRES_IN_DAYS = 7
 
 function errorResponse(
   status: number,
@@ -115,6 +124,11 @@ function getAppBaseUrl(): string {
 
 function getInviteDedupKey(templateId: string, companyId: string, collaboratorExternalEmployeeId: string): string {
   return `${templateId}:${companyId}:${collaboratorExternalEmployeeId}`
+}
+
+function getCreatedBy(access: Awaited<ReturnType<typeof resolveCopsoqAccessContext>>): string | null {
+  if (!access || access.mode === 'api_key') return null
+  return access.userId
 }
 
 function cleanupInviteDedupStore(nowMs: number): void {
@@ -253,23 +267,94 @@ export async function POST(request: Request): Promise<NextResponse> {
         continue
       }
 
+      let inviteId: string | null = null
       try {
-        const formUrl = new URL(`/formularios/${template.id}`, appBaseUrl)
-        formUrl.searchParams.set('cnpj', company.cnpj)
-        formUrl.searchParams.set('collaboratorExternalEmployeeId', collaboratorExternalEmployeeId)
+        const dedupThreshold = new Date(Date.now() - INVITE_DEDUP_WINDOW_MS).toISOString()
+        const recentPending = await findRecentPendingInviteMongo(template.id, recipientEmail, dedupThreshold)
+        if (recentPending?.id) {
+          skippedDuplicates.push({
+            collaboratorExternalEmployeeId,
+            reason: 'DUPLICATE_PENDING_INVITE_RECENTLY_CREATED',
+          })
+          inviteDedupStore.set(dedupKey, { sentAt: nowMs })
+          continue
+        }
+
+        const token = randomBytes(16).toString('hex')
+        const tokenHash = createHash('sha256').update(token).digest('hex')
+        inviteId = randomUUID()
+        const expiresAt = new Date(Date.now() + DEFAULT_EXPIRES_IN_DAYS * 24 * 60 * 60 * 1000).toISOString()
+
+        await insertInviteMongo({
+          id: inviteId,
+          template_id: template.id,
+          recipient_email: recipientEmail,
+          company_id: company.id,
+          collaborator_id: collaborator.id ?? null,
+          collaborator_external_employee_id: collaboratorExternalEmployeeId,
+          collaborator_name: collaborator.full_name ?? null,
+          token_hash: tokenHash,
+          status: 'pending',
+          expires_at: expiresAt,
+          created_by: getCreatedBy(access),
+          sent_at: null,
+          last_error: null,
+        })
+        await backupInviteToSupabase({
+          id: inviteId,
+          template_id: template.id,
+          recipient_email: recipientEmail,
+          token_hash: tokenHash,
+          status: 'pending',
+          expires_at: expiresAt,
+          created_by: getCreatedBy(access),
+          sent_at: null,
+          last_error: null,
+        })
+
+        const formUrl = new URL(`/portal/${token}`, appBaseUrl)
 
         await sendFormInvite({
           to: recipientEmail,
           collaboratorName: collaborator.full_name,
           templateName: template.template_name,
           formUrl: formUrl.toString(),
+          expiresAtIso: expiresAt,
+        })
+        const sentAt = new Date().toISOString()
+        await updateInviteMongoById(inviteId, {
+          sent_at: sentAt,
+          last_error: null,
+        })
+        await backupInviteToSupabase({
+          id: inviteId,
+          sent_at: sentAt,
+          last_error: null,
         })
         sentTo.push(recipientEmail)
         inviteDedupStore.set(dedupKey, { sentAt: nowMs })
       } catch (error) {
+        logServerError('POST /api/forms/invites/send collaborator send failed', error, {
+          collaboratorExternalEmployeeId,
+          companyId: company.id,
+          templateId: template.id,
+        })
+
+        if (inviteId) {
+          const errorMessage = 'EMAIL_SEND_FAILED'
+          await updateInviteMongoById(inviteId, {
+            status: 'revoked',
+            last_error: errorMessage,
+          })
+          await backupInviteToSupabase({
+            id: inviteId,
+            status: 'revoked',
+            last_error: errorMessage,
+          })
+        }
         failures.push({
           collaboratorExternalEmployeeId,
-          reason: error instanceof Error ? error.message : 'EMAIL_SEND_FAILED',
+          reason: 'EMAIL_SEND_FAILED',
         })
       }
     }
@@ -295,7 +380,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       { status: 200 }
     )
   } catch (error) {
-    const details = error instanceof Error ? [error.message] : []
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao enviar convites por e-mail.', details)
+    logServerError('POST /api/forms/invites/send failed', error, { ip })
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao enviar convites por e-mail.', getPublicErrorDetails(error))
   }
 }

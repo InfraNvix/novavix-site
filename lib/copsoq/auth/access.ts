@@ -43,8 +43,11 @@ function getTechnicalEmails(): Set<string> {
   )
 }
 
+const TECHNICAL_ROLES = new Set(['admin', 'tecnico'])
+const SCOPED_COMPANY_ROLES = new Set(['empresa', 'clinica'])
+
 function isTechnicalProfile(role: string, loginEmail: string): boolean {
-  if (role === 'admin' || role === 'tecnico' || role === 'clinica') {
+  if (TECHNICAL_ROLES.has(role)) {
     return true
   }
 
@@ -94,11 +97,12 @@ export async function resolveCopsoqAccessContext(request: Request): Promise<Cops
   const role = profile.role
   const loginEmail = profile.login_email
   const isTechnical = isTechnicalProfile(role, loginEmail)
+  const hasScopedCompanyAccess = SCOPED_COMPANY_ROLES.has(role) && Boolean(profile.company_id)
 
   return {
     mode: 'user',
     canReadIndividual: isTechnical,
-    canReadAggregate: role === 'empresa' || isTechnical,
+    canReadAggregate: hasScopedCompanyAccess || isTechnical,
     canRecomputeAggregate: isTechnical,
     companyId: profile.company_id,
     role,
@@ -113,11 +117,15 @@ export function canAccessCompanyScope(context: CopsoqAccessContext, companyId: s
     return true
   }
 
+  if (!companyId || companyId.trim().length === 0) {
+    return false
+  }
+
   if (context.isTechnical) {
     return true
   }
 
-  if (context.role === 'empresa') {
+  if (context.role === 'empresa' || context.role === 'clinica') {
     return context.companyId === companyId
   }
 

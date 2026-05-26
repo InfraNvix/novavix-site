@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { parseCsvTemplate, parseJsonTemplate, parseXlsxTemplate } from '@/lib/forms/parser'
 import { backupTemplateToSupabase, getProfileMongoFirst, insertTemplateMongo } from '@/lib/mongodb/primary-store'
+import { getPublicDebugDetails, getPublicErrorDetails, logServerError, sanitizeErrorMessage } from '@/lib/security/safe-error'
 
 type ApiErrorCode =
   | 'VALIDATION_ERROR'
@@ -88,8 +89,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         schema = parseXlsxTemplate(fileBuffer, templateName)
       }
     } catch (error) {
-      const code = error instanceof Error ? error.message : 'FORM_PARSE_ERROR'
-      return errorResponse(422, 'DOMAIN_ERROR', 'Falha ao interpretar arquivo de formulario.', [code])
+      const code = sanitizeErrorMessage(error, 'FORM_PARSE_ERROR')
+      return errorResponse(422, 'DOMAIN_ERROR', 'Falha ao interpretar arquivo de formulario.', getPublicDebugDetails(code))
     }
 
     const templateId = randomUUID()
@@ -131,8 +132,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       { status: 201 }
     )
   } catch (error) {
-    const details = error instanceof Error ? [error.message] : []
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna no upload do formulario.', details)
+    logServerError('POST /api/admin/forms/upload failed', error)
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna no upload do formulario.', getPublicErrorDetails(error))
   }
 }
-

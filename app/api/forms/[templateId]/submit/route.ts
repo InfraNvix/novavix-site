@@ -6,9 +6,11 @@ import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { normalizeCnpj, isValidCnpjFormat } from '@/lib/auth/cnpj'
 import type { FormTemplateSchema } from '@/lib/forms/parser'
 import { validateSubmissionAnswers } from '@/lib/forms/runtime'
+import { getPublicErrorDetails, logServerError } from '@/lib/security/safe-error'
 import {
   backupInviteToSupabase,
   backupSubmissionToSupabase,
+  consumePendingInviteMongoById,
   findCompanyByCnpjMongo,
   findInviteByTokenHashMongo,
   findTemplateActiveByIdMongo,
@@ -35,6 +37,13 @@ function errorResponse(status: number, code: ApiErrorCode, message: string, deta
 
 function asTrimmed(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
+}
+
+type ActiveTemplateRecord = {
+  id: string
+  company_id: string | null
+  template_name: string
+  schema_json?: unknown
 }
 
 export async function POST(
@@ -95,17 +104,22 @@ export async function POST(
       return errorResponse(422, 'VALIDATION_ERROR', 'E-mail do respondente invalido.')
     }
 
-    let templateData = await findTemplateActiveByIdMongo(templateId)
+    let templateData: ActiveTemplateRecord | null = await findTemplateActiveByIdMongo(templateId)
     const admin = getSupabaseAdminClient()
     if (!templateData) {
       const { data } = await admin
         .from('company_form_templates')
-        .select('id, template_name, schema_json, status')
+        .select('id, company_id, template_name, schema_json, status')
         .eq('id', templateId)
         .eq('status', 'active')
         .maybeSingle()
       if (data?.id) {
-        templateData = data
+        templateData = {
+          id: data.id,
+          company_id: data.company_id ?? null,
+          template_name: data.template_name,
+          schema_json: data.schema_json,
+        }
         await mirrorCompanyFormTemplateById(data.id, 'fallback_read_template_submit')
       }
     }
@@ -144,11 +158,22 @@ export async function POST(
       if (!invite) {
         const { data } = await admin
           .from('form_email_invites')
-          .select('id, template_id, status, expires_at, used_at')
+          .select('id, template_id, recipient_email, status, expires_at, used_at')
           .eq('token_hash', tokenHash)
           .maybeSingle()
         if (data?.id) {
-          invite = data
+          invite = {
+            id: data.id,
+            template_id: data.template_id,
+            recipient_email: data.recipient_email ?? null,
+            status: data.status,
+            expires_at: data.expires_at,
+            used_at: data.used_at ?? null,
+            company_id: null,
+            collaborator_id: null,
+            collaborator_external_employee_id: null,
+            collaborator_name: null,
+          }
           await mirrorFormEmailInviteById(data.id, 'fallback_read_invite_submit')
         }
       }
@@ -173,23 +198,62 @@ export async function POST(
         return errorResponse(422, 'VALIDATION_ERROR', 'Este convite expirou.')
       }
       inviteId = invite.id
+      const inviteCompanyId = invite.company_id ?? templateData.company_id ?? null
+      if (!inviteCompanyId) {
+        return errorResponse(422, 'VALIDATION_ERROR', 'Convite sem empresa vinculada. Solicite um novo link.')
+      }
+      companyId = inviteCompanyId
+
+      if (invite.collaborator_id) {
+        const { data: collaborator, error: collaboratorError } = await admin
+          .from('copsoq_collaborators')
+          .select('id, external_employee_id, full_name, is_active')
+          .eq('company_id', inviteCompanyId)
+          .eq('id', invite.collaborator_id)
+          .maybeSingle()
+
+        if (collaboratorError || !collaborator?.id || !collaborator.is_active) {
+          return errorResponse(422, 'VALIDATION_ERROR', 'Convite sem colaborador valido. Solicite um novo link.')
+        }
+
+        collaboratorInsert = {
+          id: collaborator.id,
+          externalEmployeeId: collaborator.external_employee_id ?? invite.collaborator_external_employee_id ?? null,
+          fullName: collaborator.full_name ?? invite.collaborator_name ?? null,
+        }
+      } else if (invite.collaborator_external_employee_id) {
+        const { data: collaborator, error: collaboratorError } = await admin
+          .from('copsoq_collaborators')
+          .select('id, external_employee_id, full_name, is_active')
+          .eq('company_id', inviteCompanyId)
+          .eq('external_employee_id', invite.collaborator_external_employee_id)
+          .maybeSingle()
+
+        if (collaboratorError || !collaborator?.id || !collaborator.is_active) {
+          return errorResponse(422, 'VALIDATION_ERROR', 'Convite sem colaborador valido. Solicite um novo link.')
+        }
+
+        collaboratorInsert = {
+          id: collaborator.id,
+          externalEmployeeId: collaborator.external_employee_id ?? invite.collaborator_external_employee_id,
+          fullName: collaborator.full_name ?? invite.collaborator_name ?? null,
+        }
+      } else if (invite.collaborator_name) {
+        collaboratorInsert.fullName = invite.collaborator_name
+      }
 
       inviteUsedAtIso = new Date().toISOString()
-      const { data: consumedInvite } = await admin
-        .from('form_email_invites')
-        .update({
-          status: 'used',
-          used_at: inviteUsedAtIso,
-        })
-        .eq('id', inviteId)
-        .eq('status', 'pending')
-        .is('used_at', null)
-        .select('id')
-        .maybeSingle()
+      const consumedInvite = await consumePendingInviteMongoById(inviteId, inviteUsedAtIso)
 
-      if (!consumedInvite?.id) {
+      if (!consumedInvite) {
         return errorResponse(409, 'VALIDATION_ERROR', 'Este convite ja foi utilizado.')
       }
+
+      await backupInviteToSupabase({
+        id: inviteId,
+        status: 'used',
+        used_at: inviteUsedAtIso,
+      })
     } else {
       if (!isValidCnpjFormat(cnpj)) {
         return errorResponse(422, 'VALIDATION_ERROR', 'CNPJ invalido.')
@@ -240,6 +304,10 @@ export async function POST(
       }
     }
 
+    if (!companyId) {
+      return errorResponse(422, 'VALIDATION_ERROR', 'Nao foi possivel resolver a empresa deste envio.')
+    }
+
     const submissionId = randomUUID()
     const submissionPayload = {
       id: submissionId,
@@ -270,15 +338,7 @@ export async function POST(
     }
 
     if (inviteId && inviteUsedAtIso) {
-      await updateInviteMongoById(inviteId, {
-        status: 'used',
-        used_at: inviteUsedAtIso,
-      })
-      await backupInviteToSupabase({
-        id: inviteId,
-        status: 'used',
-        used_at: inviteUsedAtIso,
-      })
+      await updateInviteMongoById(inviteId, { used_at: inviteUsedAtIso })
     }
 
     return NextResponse.json(
@@ -293,8 +353,9 @@ export async function POST(
       { status: 201 }
     )
   } catch (error) {
-    const details = error instanceof Error ? [error.message] : []
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao enviar formulario.', details)
+    logServerError('POST /api/forms/[templateId]/submit failed', error, {
+      templateId: context.params.templateId,
+    })
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao enviar formulario.', getPublicErrorDetails(error))
   }
 }
-

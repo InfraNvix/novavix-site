@@ -5,6 +5,7 @@ import { getClientIp } from '@/lib/security/http'
 import { getSupabaseAdminClient } from '@/lib/supabase/admin'
 import { backupInviteToSupabase, findInviteByTokenHashMongo, findTemplateActiveByIdMongo, updateInviteMongoById } from '@/lib/mongodb/primary-store'
 import { mirrorFormEmailInviteById } from '@/lib/mongodb/mirror/write-through'
+import { getPublicErrorDetails, logServerError } from '@/lib/security/safe-error'
 
 type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'FORBIDDEN' | 'INTERNAL_ERROR'
 
@@ -50,7 +51,18 @@ export async function GET(request: Request): Promise<NextResponse> {
         .eq('token_hash', tokenHash)
         .maybeSingle()
       if (data?.id) {
-        invite = data
+        invite = {
+          id: data.id,
+          template_id: data.template_id,
+          status: data.status,
+          expires_at: data.expires_at,
+          used_at: data.used_at ?? null,
+          recipient_email: null,
+          company_id: null,
+          collaborator_id: null,
+          collaborator_external_employee_id: null,
+          collaborator_name: null,
+        }
         await mirrorFormEmailInviteById(data.id, 'fallback_read_invite_validate')
       }
     }
@@ -103,8 +115,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       { status: 200 }
     )
   } catch (error) {
-    const details = error instanceof Error ? [error.message] : []
-    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao validar convite.', details)
+    logServerError('GET /api/forms/invites/validate failed', error)
+    return errorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao validar convite.', getPublicErrorDetails(error))
   }
 }
-

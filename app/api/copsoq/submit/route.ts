@@ -6,6 +6,7 @@ import { processCopsoqIndividualSubmission } from '@/lib/copsoq/services/process
 import { writeCopsoqAuditEvent } from '@/lib/copsoq/services/audit'
 import { parseCopsoqSubmissionPayload } from '@/lib/validators/copsoq-submit'
 import { canAccessCompanyScope, resolveCopsoqAccessContext } from '@/lib/copsoq/auth/access'
+import { getPublicDebugDetails, logServerError, sanitizeErrorMessage } from '@/lib/security/safe-error'
 
 type ApiErrorCode =
   | 'INVALID_JSON'
@@ -165,7 +166,8 @@ export async function POST(request: Request): Promise<NextResponse> {
         { status: 201 }
       )
     } catch (error) {
-      const code = error instanceof Error ? error.message : 'COPSOQ_UNKNOWN_ERROR'
+      const code = sanitizeErrorMessage(error, 'COPSOQ_UNKNOWN_ERROR')
+      logServerError('POST /api/copsoq/submit domain failure', error, { ip, code })
       const mapped = mapDomainError(code)
       await writeCopsoqAuditEvent({
         eventName: 'copsoq.submit.individual',
@@ -180,7 +182,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         ip,
         errorCode: code,
       })
-      return errorResponse(mapped.status, 'DOMAIN_ERROR', mapped.message, [code])
+      return errorResponse(mapped.status, 'DOMAIN_ERROR', mapped.message, getPublicDebugDetails(code))
     }
   } catch {
     await writeCopsoqAuditEvent({

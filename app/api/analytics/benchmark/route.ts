@@ -5,6 +5,7 @@ import { canAccessCompanyScope, resolveCopsoqAccessContext } from '@/lib/copsoq/
 import { parseAnalyticsBenchmarkQuery } from '@/lib/validators/analytics-benchmark'
 import { resolveAnalyticsCompanyId, analyticsErrorResponse } from '@/lib/analytics/http'
 import { getAnalyticsBenchmark } from '@/lib/analytics/services/analytics-service'
+import { getPublicErrorDetails, logServerError, sanitizeErrorMessage } from '@/lib/security/safe-error'
 
 export async function GET(request: Request): Promise<NextResponse> {
   const ip = getClientIp(request)
@@ -48,7 +49,8 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({ ok: true, data: result }, { status: 200 })
   } catch (error) {
-    const code = error instanceof Error ? error.message : 'ANALYTICS_BENCHMARK_INTERNAL_ERROR'
-    return analyticsErrorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao consultar benchmark.', [code])
+    const code = sanitizeErrorMessage(error, 'ANALYTICS_BENCHMARK_INTERNAL_ERROR')
+    logServerError('GET /api/analytics/benchmark failed', error, { ip, code })
+    return analyticsErrorResponse(500, 'INTERNAL_ERROR', 'Falha interna ao consultar benchmark.', getPublicErrorDetails(error))
   }
 }

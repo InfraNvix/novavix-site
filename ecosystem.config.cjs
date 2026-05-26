@@ -2,17 +2,17 @@ module.exports = {
   apps: [
     {
       name: 'novavix-site',
-      script: 'npm',
-      args: 'run start:standalone',
+      script: '.next/standalone/server.js',
+      interpreter: 'node',
       cwd: __dirname,
-      instances: 2,
-      exec_mode: 'cluster',
+      instances: 1,
+      exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
         HOSTNAME: '0.0.0.0'
       },
-      max_memory_restart: '700M',
+      max_memory_restart: '350M',
       autorestart: true,
       listen_timeout: 15000,
       kill_timeout: 5000,
