@@ -5,6 +5,8 @@ import { getClientIp } from '@/lib/security/http'
 import { checkRateLimit } from '@/lib/security/rate-limit'
 import { getPublicErrorDetails, logServerError } from '@/lib/security/safe-error'
 
+export const dynamic = 'force-dynamic'
+
 type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR' | 'TOO_MANY_REQUESTS'
 
 function errorResponse(status: number, code: ApiErrorCode, message: string, details?: string[]): NextResponse {
@@ -59,10 +61,11 @@ export async function GET(request: Request): Promise<NextResponse> {
 
     const { data: collaborators, error: collabError } = await admin
       .from('copsoq_collaborators')
-      .select('id, external_employee_id, full_name, is_active')
+      .select('external_employee_id, is_active')
       .eq('company_id', company.id)
       .eq('is_active', true)
-      .order('full_name', { ascending: true })
+      .not('external_employee_id', 'is', null)
+      .order('external_employee_id', { ascending: true })
       .limit(500)
 
     if (collabError) {
@@ -77,9 +80,7 @@ export async function GET(request: Request): Promise<NextResponse> {
           companyCnpj: cnpj,
           collaborators:
             collaborators?.map((row) => ({
-              id: row.id,
               externalEmployeeId: row.external_employee_id,
-              fullName: row.full_name,
             })) ?? [],
         },
       },

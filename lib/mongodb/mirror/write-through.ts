@@ -44,7 +44,9 @@ export async function mirrorFormEmailInviteById(inviteId: string, operation: str
     const supabase = getSupabaseAdminClient()
     const { data, error } = await supabase
       .from('form_email_invites')
-      .select('id, template_id, recipient_email, token_hash, status, expires_at, used_at, sent_at, last_error, created_at, created_by')
+      .select(
+        'id, template_id, recipient_email, company_id, collaborator_id, collaborator_external_employee_id, collaborator_name, token_hash, status, expires_at, used_at, sent_at, last_error, created_at, created_by'
+      )
       .eq('id', inviteId)
       .maybeSingle()
 

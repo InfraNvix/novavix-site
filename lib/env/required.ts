@@ -10,8 +10,6 @@ const REQUIRED_ENV_VARS = [
   'FRONTEND_URL',
   'NOVAVIX_SYNC_API_KEY',
   'NOVAVIX_COPSOQ_API_KEY',
-  'UPSTASH_REDIS_REST_URL',
-  'UPSTASH_REDIS_REST_TOKEN',
 ] as const
 
 let hasValidatedEnv = false

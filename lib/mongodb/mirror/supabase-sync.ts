@@ -417,7 +417,7 @@ export async function syncSupabaseToMongo(): Promise<{ synced: SyncCount }> {
     table: 'form_email_invites',
     fetchTableName: 'form_email_invites',
     columns:
-      'id, template_id, recipient_email, token_hash, status, expires_at, used_at, sent_at, last_error, created_at, created_by',
+      'id, template_id, recipient_email, company_id, collaborator_id, collaborator_external_employee_id, collaborator_name, token_hash, status, expires_at, used_at, sent_at, last_error, created_at, created_by',
     upsert: upsertFormEmailInvites,
     synced,
   })

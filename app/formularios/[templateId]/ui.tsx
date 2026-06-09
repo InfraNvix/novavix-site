@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import type { FormFieldSchema, FormTemplateSchema } from '@/lib/forms/parser'
@@ -12,9 +12,7 @@ type TemplateResponse = {
 }
 
 type Collaborator = {
-  id: string
   externalEmployeeId: string | null
-  fullName: string | null
 }
 
 type LoadState = 'loading' | 'ready' | 'error'
@@ -24,6 +22,26 @@ function toInputType(field: FormFieldSchema): string {
   if (field.type === 'number') return 'number'
   if (field.type === 'date') return 'date'
   return 'text'
+}
+
+function removeSensitiveQueryParamsFromUrl(): void {
+  if (typeof window === 'undefined') return
+
+  const url = new URL(window.location.href)
+  const sensitiveParams = ['invite', 'cnpj', 'collaboratorExternalEmployeeId']
+  let changed = false
+
+  for (const param of sensitiveParams) {
+    if (url.searchParams.has(param)) {
+      url.searchParams.delete(param)
+      changed = true
+    }
+  }
+
+  if (changed) {
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`
+    window.history.replaceState(null, '', nextUrl)
+  }
 }
 
 export default function DynamicFormClient({
@@ -39,7 +57,7 @@ export default function DynamicFormClient({
   const [error, setError] = useState<string | null>(null)
   const [template, setTemplate] = useState<TemplateResponse | null>(null)
   const [collaborators, setCollaborators] = useState<Collaborator[]>([])
-  const [collaboratorId, setCollaboratorId] = useState('')
+  const [collaboratorExternalEmployeeId, setCollaboratorExternalEmployeeId] = useState('')
   const [collaboratorLoading, setCollaboratorLoading] = useState(false)
   const [collaboratorMessage, setCollaboratorMessage] = useState<string | null>(null)
   const [preferredExternalEmployeeId, setPreferredExternalEmployeeId] = useState('')
@@ -94,6 +112,7 @@ export default function DynamicFormClient({
     if (inviteFromUrl) {
       setInviteToken(inviteFromUrl)
     }
+    removeSensitiveQueryParamsFromUrl()
   }, [searchParams])
 
   useEffect(() => {
@@ -107,7 +126,11 @@ export default function DynamicFormClient({
       setInviteStatusMessage(null)
       setError(null)
       try {
-        const response = await fetch(`/api/forms/invites/validate?invite=${encodeURIComponent(inviteToken)}`)
+        const response = await fetch('/api/forms/invites/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invite: inviteToken }),
+        })
         const json = await response.json()
         if (!response.ok || !json.ok) {
           throw new Error(json?.error?.message ?? 'Convite invalido.')
@@ -140,11 +163,11 @@ export default function DynamicFormClient({
 
   useEffect(() => {
     setCollaborators([])
-    setCollaboratorId('')
+    setCollaboratorExternalEmployeeId('')
     setCollaboratorMessage(null)
   }, [cnpj])
 
-  async function handleLoadCollaborators(): Promise<void> {
+  const handleLoadCollaborators = useCallback(async (): Promise<void> => {
     setCollaboratorLoading(true)
     setCollaboratorMessage(null)
     setError(null)
@@ -163,28 +186,28 @@ export default function DynamicFormClient({
       const preferred = preferredExternalEmployeeId.trim().toLowerCase()
       if (preferred) {
         const matched = list.find((item) => (item.externalEmployeeId ?? '').trim().toLowerCase() === preferred)
-        setCollaboratorId(matched?.id ?? '')
+        setCollaboratorExternalEmployeeId(matched?.externalEmployeeId ?? '')
       } else {
-        setCollaboratorId('')
+        setCollaboratorExternalEmployeeId('')
       }
       if (list.length === 0) {
         setCollaboratorMessage('Nenhum colaborador ativo encontrado para este CNPJ.')
       }
     } catch (err) {
       setCollaborators([])
-      setCollaboratorId('')
+      setCollaboratorExternalEmployeeId('')
       setCollaboratorMessage(null)
       setError(err instanceof Error ? err.message : 'Falha ao carregar colaboradores.')
     } finally {
       setCollaboratorLoading(false)
     }
-  }
+  }, [cnpj, preferredExternalEmployeeId])
 
   useEffect(() => {
     if (inviteToken) return
     if (!cnpj) return
     void handleLoadCollaborators()
-  }, [cnpj, preferredExternalEmployeeId, inviteToken])
+  }, [cnpj, handleLoadCollaborators, inviteToken])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault()
@@ -197,7 +220,7 @@ export default function DynamicFormClient({
         if (!cnpj) {
           throw new Error('Informe o CNPJ antes de enviar.')
         }
-        if (!collaboratorId) {
+        if (!collaboratorExternalEmployeeId) {
           throw new Error('Selecione o colaborador.')
         }
       } else if (!inviteValid) {
@@ -209,7 +232,7 @@ export default function DynamicFormClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           cnpj,
-          collaboratorId,
+          collaboratorExternalEmployeeId,
           respondentName,
           respondentEmail,
           invite: inviteToken || undefined,
@@ -312,16 +335,15 @@ export default function DynamicFormClient({
                   Colaborador
                 </label>
                 <select
-                  value={collaboratorId}
-                  onChange={(event) => setCollaboratorId(event.target.value)}
+                  value={collaboratorExternalEmployeeId}
+                  onChange={(event) => setCollaboratorExternalEmployeeId(event.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-sm"
                   required
                 >
                   <option value="">Selecione o colaborador</option>
                   {collaborators.map((collaborator) => (
-                    <option key={collaborator.id} value={collaborator.id}>
-                      {collaborator.fullName ?? 'Sem nome'}
-                      {collaborator.externalEmployeeId ? ` - ${collaborator.externalEmployeeId}` : ''}
+                    <option key={collaborator.externalEmployeeId ?? ''} value={collaborator.externalEmployeeId ?? ''}>
+                      {collaborator.externalEmployeeId ?? 'Sem matricula'}
                     </option>
                   ))}
                 </select>

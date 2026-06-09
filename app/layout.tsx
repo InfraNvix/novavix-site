@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import BrowserStoragePreflight from "./_components/browser-storage-preflight";
+import BrowserStorageSanitizer from "./_components/browser-storage-sanitizer";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -25,7 +27,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <BrowserStoragePreflight />
+        <BrowserStorageSanitizer />
+        {children}
+      </body>
     </html>
   );
 }

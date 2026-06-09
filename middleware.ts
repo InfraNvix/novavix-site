@@ -15,7 +15,11 @@ import { validateRequiredEnv } from './lib/env/required'
 
 function applyHttpHeaders(target: NextResponse, request: NextRequest): NextResponse {
   const withSecurity = applySecurityHeaders(target)
-  return applyCorsHeaders(withSecurity, request)
+  const withCors = applyCorsHeaders(withSecurity, request)
+  if (isAuthPage(request.nextUrl.pathname)) {
+    withCors.headers.set('Cache-Control', 'no-store')
+  }
+  return withCors
 }
 
 function withSessionCookies(source: NextResponse, target: NextResponse, request: NextRequest): NextResponse {

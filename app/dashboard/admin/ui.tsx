@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 
 type Company = {
@@ -52,7 +52,7 @@ export default function AdminSetupClient() {
   const [inviteSending, setInviteSending] = useState(false)
   const [inviteFeedback, setInviteFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
-  async function loadData(): Promise<void> {
+  const loadData = useCallback(async (): Promise<void> => {
     setLoading(true)
     setError(null)
     try {
@@ -71,23 +71,22 @@ export default function AdminSetupClient() {
       setCompanies(nextCompanies)
       const nextTemplates = (templatesJson.data?.templates ?? []) as Template[]
       setTemplates(nextTemplates)
-      if (!inviteTemplateId) {
+      setInviteTemplateId((currentTemplateId) => {
+        if (currentTemplateId) return currentTemplateId
         const firstActiveTemplate = nextTemplates.find((template) => template.status === 'active')
-        if (firstActiveTemplate?.id) {
-          setInviteTemplateId(firstActiveTemplate.id)
-        }
-      }
+        return firstActiveTemplate?.id ?? ''
+      })
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar dados do painel.')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     void loadData()
-  }, [])
+  }, [loadData])
 
   const companiesById = useMemo(() => {
     const map = new Map<string, Company>()

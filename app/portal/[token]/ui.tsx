@@ -6,6 +6,11 @@ import DynamicFormClient from '@/app/formularios/[templateId]/ui'
 
 type LoadState = 'loading' | 'ready' | 'error'
 
+function hideInviteTokenFromUrl(): void {
+  if (typeof window === 'undefined') return
+  window.history.replaceState(null, '', '/portal')
+}
+
 export default function PortalInviteClient({ token }: { token: string }) {
   const [state, setState] = useState<LoadState>('loading')
   const [templateId, setTemplateId] = useState<string | null>(null)
@@ -19,7 +24,12 @@ export default function PortalInviteClient({ token }: { token: string }) {
           throw new Error('Token de convite obrigatorio.')
         }
 
-        const response = await fetch(`/api/forms/invites/validate?invite=${encodeURIComponent(trimmedToken)}`)
+        hideInviteTokenFromUrl()
+        const response = await fetch('/api/forms/invites/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invite: trimmedToken }),
+        })
         const json = await response.json()
         if (!response.ok || !json.ok) {
           throw new Error(json?.error?.message ?? 'Convite invalido.')
@@ -32,6 +42,7 @@ export default function PortalInviteClient({ token }: { token: string }) {
 
         setTemplateId(nextTemplateId)
         setState('ready')
+        hideInviteTokenFromUrl()
       } catch (error) {
         setMessage(error instanceof Error ? error.message : 'Convite invalido.')
         setState('error')

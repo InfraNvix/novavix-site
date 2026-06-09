@@ -5,6 +5,7 @@ const SENSITIVE_PATTERNS: RegExp[] = [
   /mongodb(?:\+srv)?:\/\/[^\s'"]+/gi,
   /https?:\/\/[^\s'"]*upstash[^\s'"]*/gi,
   /(SUPABASE_SERVICE_ROLE_KEY|MONGODB_URI|RESEND_API_KEY|UPSTASH_REDIS_REST_TOKEN|NOVAVIX_[A-Z0-9_]+)\s*[:=]\s*[^\s,;]+/gi,
+  /(\/portal\/)([a-z0-9_-]{16,})/gi,
   /(token|invite)=([a-z0-9_-]{16,})/gi,
   /(Bearer\s+)[A-Za-z0-9._-]+/gi,
 ]
@@ -18,6 +19,9 @@ export function redactSensitiveText(input: string): string {
         const normalized = maybePrefix.trim().toLowerCase()
         if (normalized === 'bearer') {
           return `${maybePrefix} ${REDACTED}`
+        }
+        if (normalized === '/portal/') {
+          return `${maybePrefix}${REDACTED}`
         }
         return `${maybePrefix}=${REDACTED}`
       }

@@ -4,8 +4,6 @@ import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { normalizeCnpj } from '@/lib/auth/cnpj'
-import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'empresa' | 'admin' | 'clinica'>('empresa')
@@ -14,105 +12,136 @@ export default function LoginPage() {
   const [clinicEmail, setClinicEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [feedback, setFeedback] = useState<string | null>(null)
 
   const router = useRouter()
-  const getSupabase = () => getSupabaseBrowserClient()
 
   const azulNovavix = '#1E3A5F'
 
+  const getRedirectPath = (fallback: string): string => {
+    if (typeof window === 'undefined') return fallback
+
+    const requestedPath = new URLSearchParams(window.location.search).get('next')
+    if (!requestedPath || !requestedPath.startsWith('/') || requestedPath.startsWith('//')) {
+      return fallback
+    }
+
+    if (mode === 'clinica' && !requestedPath.startsWith('/clinic')) {
+      return '/clinic'
+    }
+
+    if ((mode === 'empresa' || mode === 'admin') && requestedPath.startsWith('/clinic')) {
+      return fallback
+    }
+
+    return requestedPath
+  }
+
+  const resetModeState = (nextMode: 'empresa' | 'admin' | 'clinica') => {
+    setMode(nextMode)
+    setError(null)
+    setFeedback(null)
+    setLoading(false)
+    setResetLoading(false)
+  }
+
+  const getCurrentIdentifier = (): { email?: string; cnpj?: string } => {
+    if (mode === 'empresa') {
+      return { cnpj: cnpj.trim() }
+    }
+
+    return { email: (mode === 'admin' ? adminEmail : clinicEmail).trim().toLowerCase() }
+  }
+
   const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setLoading(true)
     setError(null)
+    setFeedback(null)
 
-    const supabase = getSupabase()
+    if (password.trim().length === 0) {
+      setError('Informe sua senha.')
+      return
+    }
 
-    if (mode === 'admin') {
-      if (!adminEmail) {
-        setError('Informe o e-mail de administrador.')
-        setLoading(false)
+    setLoading(true)
+
+    try {
+      if (mode === 'empresa' && cnpj.trim().length === 0) {
+        setError('Informe o CNPJ.')
         return
       }
 
-      const { error: adminSignInError } = await supabase.auth.signInWithPassword({
-        email: adminEmail,
-        password,
+      if (mode === 'admin' || mode === 'clinica') {
+        const email = mode === 'admin' ? adminEmail.trim() : clinicEmail.trim()
+        if (!email) {
+          setError(mode === 'admin' ? 'Informe o e-mail de administrador.' : 'Informe o e-mail da clinica.')
+          return
+        }
+      }
+
+      const loginResponse = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode,
+          password,
+          ...getCurrentIdentifier(),
+        }),
       })
 
-      if (adminSignInError) {
-        setError('Credenciais invalidas.')
-        setLoading(false)
+      const loginJson = (await loginResponse.json().catch(() => null)) as
+        | { ok: true; data: { redirectTo: string } }
+        | { ok: false; error?: { message?: string } }
+        | null
+
+      if (!loginResponse.ok || !loginJson?.ok) {
+        setError(!loginJson || loginJson.ok ? 'Credenciais invalidas.' : loginJson.error?.message ?? 'Credenciais invalidas.')
         return
       }
 
-      router.push('/dashboard')
+      router.push(getRedirectPath(loginJson.data.redirectTo))
       router.refresh()
+    } catch (loginError) {
+      console.error('[login] failed', loginError)
+      setError('Nao foi possivel iniciar a sessao. Confira a configuracao do Supabase na hospedagem.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePasswordReset = async () => {
+    setError(null)
+    setFeedback(null)
+
+    const identifier = getCurrentIdentifier()
+    if (mode === 'empresa' && !identifier.cnpj) {
+      setError('Informe o CNPJ para solicitar recuperacao de senha.')
+      return
+    }
+    if (mode !== 'empresa' && !identifier.email) {
+      setError('Informe o e-mail para solicitar recuperacao de senha.')
       return
     }
 
-    if (mode === 'clinica') {
-      if (!clinicEmail) {
-        setError('Informe o e-mail da clinica.')
-        setLoading(false)
-        return
-      }
-
-      const { error: clinicSignInError } = await supabase.auth.signInWithPassword({
-        email: clinicEmail,
-        password,
+    setResetLoading(true)
+    try {
+      const response = await fetch('/api/auth/password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode,
+          ...identifier,
+        }),
       })
-
-      if (clinicSignInError) {
-        setError('Credenciais invalidas.')
-        setLoading(false)
-        return
-      }
-
-      router.push('/clinic')
-      router.refresh()
-      return
+      const json = (await response.json().catch(() => null)) as { data?: { message?: string } } | null
+      setFeedback(json?.data?.message ?? 'Se os dados estiverem cadastrados, enviaremos um link de redefinicao de senha.')
+    } catch {
+      setFeedback('Se os dados estiverem cadastrados, enviaremos um link de redefinicao de senha.')
+    } finally {
+      setResetLoading(false)
     }
-
-    const normalizedCnpj = normalizeCnpj(cnpj)
-    if (normalizedCnpj.length !== 14) {
-      setError('Informe um CNPJ valido com 14 digitos.')
-      setLoading(false)
-      return
-    }
-
-    const lookupResponse = await fetch('/api/auth/company-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        cnpj: normalizedCnpj,
-        password,
-      }),
-    })
-
-    const lookupJson = (await lookupResponse.json()) as
-      | { ok: true; data: { email: string } }
-      | { ok: false; error?: { message?: string } }
-
-    if (!lookupResponse.ok || !lookupJson.ok) {
-      setError(lookupJson.ok ? 'Credenciais invalidas.' : lookupJson.error?.message ?? 'Credenciais invalidas.')
-      setLoading(false)
-      return
-    }
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: lookupJson.data.email,
-      password,
-    })
-
-    if (signInError) {
-      setError('Credenciais invalidas.')
-      setLoading(false)
-      return
-    }
-
-    router.push('/dashboard')
-    router.refresh()
   }
 
   return (
@@ -142,10 +171,8 @@ export default function LoginPage() {
           <div className="mb-4 grid grid-cols-3 rounded-xl border border-slate-200 bg-slate-50 p-1 gap-1">
             <button
               type="button"
-              onClick={() => {
-                setMode('empresa')
-                setError(null)
-              }}
+              onClick={() => resetModeState('empresa')}
+              disabled={loading}
               className={`rounded-lg px-2 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
                 mode === 'empresa' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
               }`}
@@ -154,10 +181,8 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                setMode('admin')
-                setError(null)
-              }}
+              onClick={() => resetModeState('admin')}
+              disabled={loading}
               className={`rounded-lg px-2 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
                 mode === 'admin' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
               }`}
@@ -166,10 +191,8 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                setMode('clinica')
-                setError(null)
-              }}
+              onClick={() => resetModeState('clinica')}
+              disabled={loading}
               className={`rounded-lg px-2 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
                 mode === 'clinica' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
               }`}
@@ -184,6 +207,11 @@ export default function LoginPage() {
                 {error}
               </div>
             ) : null}
+            {feedback ? (
+              <div className="bg-emerald-50 text-emerald-700 text-[11px] font-bold p-3 rounded-lg text-center border border-emerald-100">
+                {feedback}
+              </div>
+            ) : null}
 
             {mode === 'empresa' ? (
               <div>
@@ -193,6 +221,7 @@ export default function LoginPage() {
                 <input
                   type="text"
                   required
+                  autoComplete="organization"
                   value={cnpj}
                   onChange={(event) => setCnpj(event.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-all"
@@ -207,6 +236,7 @@ export default function LoginPage() {
                 <input
                   type="email"
                   required
+                  autoComplete="email"
                   value={adminEmail}
                   onChange={(event) => setAdminEmail(event.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-all"
@@ -221,6 +251,7 @@ export default function LoginPage() {
                 <input
                   type="email"
                   required
+                  autoComplete="email"
                   value={clinicEmail}
                   onChange={(event) => setClinicEmail(event.target.value)}
                   className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-all"
@@ -236,6 +267,7 @@ export default function LoginPage() {
               <input
                 type="password"
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:border-blue-500 transition-all"
@@ -245,11 +277,20 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || resetLoading}
               className="w-full text-white py-4 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-50"
               style={{ backgroundColor: azulNovavix }}
             >
               {loading ? 'Validando...' : 'Entrar no Sistema'}
+            </button>
+
+            <button
+              type="button"
+              onClick={handlePasswordReset}
+              disabled={loading || resetLoading}
+              className="w-full text-blue-700 py-2 rounded-xl font-bold text-[11px] uppercase tracking-widest transition-all disabled:opacity-50"
+            >
+              {resetLoading ? 'Enviando link...' : 'Esqueci minha senha'}
             </button>
           </form>
 
