@@ -19,6 +19,18 @@ function getRequiredEnv(name: 'RESEND_API_KEY' | 'EMAIL_FROM'): string {
   return value.trim()
 }
 
+function isProduction(): boolean {
+  return process.env.NODE_ENV === 'production'
+}
+
+function validateFromAddress(fromAddress: string): void {
+  const normalized = fromAddress.toLowerCase()
+
+  if (isProduction() && normalized.includes('@resend.dev')) {
+    throw new Error('INVALID_EMAIL_FROM_DOMAIN')
+  }
+}
+
 function getResendClient(): Resend {
   if (cachedResend) {
     return cachedResend
@@ -39,6 +51,7 @@ function escapeHtml(value: string): string {
 
 export async function sendFormInvite(input: SendFormInviteInput): Promise<{ messageId: string | null }> {
   const fromAddress = getRequiredEnv('EMAIL_FROM')
+  validateFromAddress(fromAddress)
   const collaboratorDisplayName = input.collaboratorName?.trim() || 'colaborador(a)'
   const safeCollaboratorDisplayName = escapeHtml(collaboratorDisplayName)
   const safeTemplateName = escapeHtml(input.templateName)

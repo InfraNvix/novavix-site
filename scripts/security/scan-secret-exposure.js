@@ -112,6 +112,7 @@ if (secrets.length > 0) {
 
     if (
       !relativePath.startsWith('.next/') &&
+      !relativePath.startsWith('release-artifact/.next/') &&
       !STORAGE_WRITE_ALLOWLIST.has(relativePath) &&
       BROWSER_STORAGE_WRITE_PATTERN.test(content)
     ) {
